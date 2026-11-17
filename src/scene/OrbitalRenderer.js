@@ -1520,7 +1520,7 @@ export class OrbitalRenderer {
 
     this.updateAngleArc(this.angleAnnotations.raan, eciX, eciZ, elements.raan, 1.48 * arcScale, this.settings.angleAnnotations.raan, 'Ω');
     this.updateAngleArc(this.angleAnnotations.inclination, eciZ, inclinationAxis, elements.i, 1.38 * arcScale, this.settings.angleAnnotations.inclination && elements.i > 0.15 && elements.i < 179.85, 'i');
-    this.updateAngleArc(this.angleAnnotations.argp, node, wAxis, elements.argp, 1.55 * arcScale, this.settings.angleAnnotations.argp && elements.e > 1e-4 && Math.abs(Math.sin(THREE.MathUtils.degToRad(elements.i))) > 1e-4, 'ω');
+    this.updateAngleArc(this.angleAnnotations.argp, node, wAxis, elements.argp, 1.55 * arcScale, this.settings.angleAnnotations.argp && elements.e > 1e-4, 'ω');
 
     const periapsisRadius = P.orbitalMetrics(elements, this.bodyKey).rp / P.bodies[this.bodyKey].radius;
     const thetaRadius = Math.max(1.06, Math.min(periapsisRadius * .94, periapsisRadius - .035));
