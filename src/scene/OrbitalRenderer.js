@@ -1518,7 +1518,7 @@ export class OrbitalRenderer {
     const zoomScale = this.cameraScaleFactor();
     const arcScale = clamp(scale * clamp(Math.sqrt(zoomScale), .85, 2.2), .85, 2.2);
 
-    this.updateAngleArc(this.angleAnnotations.raan, eciX, eciZ, elements.raan, 1.48 * arcScale, this.settings.angleAnnotations.raan && Math.abs(Math.sin(THREE.MathUtils.degToRad(elements.i))) > 1e-4, 'Ω');
+    this.updateAngleArc(this.angleAnnotations.raan, eciX, eciZ, elements.raan, 1.48 * arcScale, this.settings.angleAnnotations.raan, 'Ω');
     this.updateAngleArc(this.angleAnnotations.inclination, eciZ, inclinationAxis, elements.i, 1.38 * arcScale, this.settings.angleAnnotations.inclination && elements.i > 0.15 && elements.i < 179.85, 'i');
     this.updateAngleArc(this.angleAnnotations.argp, node, wAxis, elements.argp, 1.55 * arcScale, this.settings.angleAnnotations.argp && elements.e > 1e-4 && Math.abs(Math.sin(THREE.MathUtils.degToRad(elements.i))) > 1e-4, 'ω');
 
