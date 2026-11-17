@@ -299,7 +299,7 @@ function renderVectors(elements) {
     status.textContent = 'CIRCULAR · PERIGEE UNDEFINED';
     status.dataset.state = 'special';
   } else if (Math.abs(Math.sin(elements.i * M.DEG)) < 1e-4) {
-    status.textContent = 'EQUATORIAL · NODE UNDEFINED';
+    status.textContent = 'EQUATORIAL · REFERENCE NODE';
     status.dataset.state = 'special';
   } else {
     status.textContent = 'VALID ELLIPTIC ORBIT';
