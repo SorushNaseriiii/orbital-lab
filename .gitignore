@@ -1,0 +1,14 @@
+
+node_modules/
+dist/
+.vite/
+.DS_Store
+Thumbs.db
+*.log
+
+public/assets/earth-blue-marble.jpg
+public/assets/earth-night-lights.jpg
+public/assets/earth-blue-marble-source.txt
+public/assets/earth-night-lights-source.txt
+public/assets/earth-texture-download-failed.txt
+public/assets/earth-night-lights-download-failed.txt
