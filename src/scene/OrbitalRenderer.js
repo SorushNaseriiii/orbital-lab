@@ -843,7 +843,7 @@ export class OrbitalRenderer {
     attribute.needsUpdate = true;
     this.nodeLine.geometry.computeBoundingSphere();
     this.nodeLine.computeLineDistances();
-    this.nodeLine.visible = this.visual('nodeLine').visible && Math.abs(Math.sin(THREE.MathUtils.degToRad(elements.i))) > 1e-4;
+    this.nodeLine.visible = this.visual('nodeLine').visible;
   }
 
   updateArrows(elements) {
