@@ -1,0 +1,28 @@
+{
+  "name": "orbital-lab",
+  "version": "1.0.6",
+  "private": true,
+  "type": "module",
+  "description": "ORBITAL LAB v1.0.6 — static Three.js orbital mechanics explorer with Earth-centred angular momentum, responsive scene framing and direct equirectangular Earth albedo and NASA Black Marble night-light mapping.",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "assets": "node scripts/download-assets.mjs",
+    "predev": "node scripts/download-assets.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/download-assets.mjs",
+    "build": "vite build",
+    "postbuild": "node scripts/verify-deploy-assets.mjs",
+    "preview": "vite preview",
+    "test": "node --test",
+    "assets:force": "node scripts/download-assets.mjs --force",
+    "assets:verify": "node scripts/verify-deploy-assets.mjs"
+  },
+  "dependencies": {
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.8"
+  }
+}

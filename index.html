@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080d18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="An offline-first interactive orbital mechanics laboratory with Earth and 2D orbital views.">
+  <title>ORBITAL LAB — Version 1.0.6</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="splash-screen" id="splashScreen" aria-label="ORBITAL LAB loading">
+    <div class="splash-orbit-mark"><span class="splash-planet"></span><i></i><b></b></div>
+    <div class="splash-title">ORBITAL <span>LAB</span></div>
+    <div class="splash-subtitle">3D ORBITAL MECHANICS</div>
+    <div class="splash-credit">CREATED BY <strong>SORUSH NASERI</strong></div>
+    <div class="splash-progress"><span></span></div>
+  </div>
+  <div class="app-shell" id="appShell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-mark"><span></span><span></span><span></span></div>
+        <div class="brand-copy">
+          <div class="brand-title">ORBITAL <span>LAB</span></div>
+          <div class="brand-subtitle">3D ORBITAL MECHANICS <i></i> <span id="frameSubtitle">ECI FRAME</span></div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="model-pill"><span class="pulse-dot"></span><span>TWO-BODY MODEL</span></div>
+        <button class="icon-button fullscreen-trigger" id="fullscreenToggle" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/></svg>
+        </button>
+        <button class="icon-button settings-trigger" id="settingsOpen" type="button" aria-label="Open settings" title="Scene settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.1a3.9 3.9 0 1 0 0 7.8 3.9 3.9 0 0 0 0-7.8Z"/><path d="m19.2 13.1 1.3 1-.9 2.2-1.6-.1a6.9 6.9 0 0 1-1.2 1.2l.1 1.6-2.2.9-1-1.3a7.1 7.1 0 0 1-1.7 0l-1 1.3-2.2-.9.1-1.6a6.9 6.9 0 0 1-1.2-1.2l-1.6.1-.9-2.2 1.3-1a7.1 7.1 0 0 1 0-1.7l-1.3-1 .9-2.2 1.6.1a6.9 6.9 0 0 1 1.2-1.2l-.1-1.6 2.2-.9 1 1.3a7.1 7.1 0 0 1 1.7 0l1-1.3 2.2.9-.1 1.6a6.9 6.9 0 0 1 1.2 1.2l1.6-.1.9 2.2-1.3 1a7.1 7.1 0 0 1 0 1.7Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="scene-panel panel-surface" aria-label="Interactive three-dimensional orbital scene">
+        <div class="scene-topline">
+          <div class="scene-readouts">
+            <div class="scene-time"><span class="readout-label">TIME FROM PERIGEE</span><strong id="timeReadout">T+ 00:00:00</strong></div>
+            <div class="scene-period"><span class="readout-label">ORBITAL PERIOD</span><strong id="periodReadout">—</strong></div>
+          </div>
+          <div class="scene-actions">
+            <button class="scene-view-toggle" id="sunViewToggle" type="button" title="Toggle Earth and 2D views">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 1.8v2.1M12 20.1v2.1M1.8 12h2.1m16.2 0h2.1M4.8 4.8l1.5 1.5m11.4 11.4 1.5 1.5m0-14.4-1.5 1.5M6.3 17.7l-1.5 1.5"/></svg>
+              <span id="sunViewToggleLabel">2D VIEW</span>
+            </button>
+            <button class="scene-view-toggle plot-toggle" id="plotToggle" type="button" title="Open orbital plots">PLOTS</button>
+          </div>
+        </div>
+        <div class="scene-solar-date" aria-live="off">
+          <span class="readout-label">SOLAR EPHEMERIS DATE</span>
+          <time id="solarDateValue" lang="fa" dir="rtl" datetime="">—</time>
+          <small lang="fa" dir="rtl">موقعیت زمین نسبت به خورشید بر اساس این تاریخ</small>
+        </div>
+        <canvas id="sceneCanvas" aria-label="3D globe and satellite orbit"></canvas>
+        <div class="scene-vignette" aria-hidden="true"></div>
+        <div class="scene-hud scene-hud-left">
+          <span class="hud-kicker">REFERENCE FRAME</span>
+          <strong id="referenceFrameName">GEOCENTRIC INERTIAL</strong>
+          <span class="hud-coordinates" id="frameCoordinates">X · vernal equinox · Y · 90° E · Z · north</span>
+        </div>
+        <div class="scene-hud scene-hud-right">
+          <span class="hud-kicker">CENTRAL BODY</span>
+          <strong id="bodyNameHud">EARTH</strong>
+          <span class="hud-coordinates" id="bodyMetaHud">μ 3.986 × 10¹⁴ m³/s²</span>
+        </div>
+        <div class="axis-label axis-x" id="axisX">X</div>
+        <div class="axis-label axis-y" id="axisY">Y</div>
+        <div class="axis-label axis-z" id="axisZ">Z</div>
+        <div class="scene-bottom-meta">
+          <div class="orbit-status"><span class="status-led"></span><span id="orbitStatus">ORBIT STABLE</span></div>
+          <div class="camera-hint"><span class="mouse-symbol">↗</span> DRAG TO ROTATE <i></i> SCROLL TO ZOOM</div>
+        </div>
+        <div class="plot-dock" id="plotDock" hidden>
+          <div class="plot-dock-head"><strong id="plotTitle">ORBITAL PLOTS</strong><div><select id="plotType" aria-label="Plot type"><option value="speed">Speed vs time</option><option value="radius">Radius vs time</option><option value="anomaly">True anomaly vs time</option></select><button id="plotDockClose" type="button" aria-label="Close plot">×</button></div></div>
+          <canvas id="plotCanvas" aria-label="Interactive orbital plot"></canvas>
+          <div class="plot-tooltip" id="plotTooltip" hidden></div>
+
+        </div>
+        <div class="texture-warning" id="textureWarning" hidden>Earth surface map unavailable. Check public/assets/earth-blue-marble.jpg and reload.</div>
+        <div class="scene-loading" id="sceneLoading"><div class="loading-orbit"></div><span>INITIALIZING ORBITAL ENGINE</span></div>
+        <div class="scene-error" id="sceneError" hidden>WebGL is unavailable in this browser. Try a recent version of Chrome, Edge, or Firefox.</div>
+      </section>
+
+      <aside class="control-panel panel-surface" aria-label="Orbital controls and state vectors">
+        <div class="control-heading earth-mode-only">
+          <div>
+            <div class="eyebrow">ORBIT DEFINITION</div>
+            <h1>Classical elements</h1>
+          </div>
+          <div class="unit-tag">SI UNITS</div>
+        </div>
+        <div class="element-list earth-mode-only" id="elementList">
+          <div class="element-row" data-key="h">
+            <div class="element-top"><div class="element-name"><span class="symbol">h</span><span>Specific angular momentum</span></div><output id="value-h">7.47 × 10¹⁰</output></div>
+            <input id="slider-h" type="range" min="0" max="100" step="0.01" value="52" aria-label="Specific angular momentum">
+            <div class="element-limits"><span id="min-h">MIN</span><span>m²/s</span><span id="max-h">MAX</span></div>
+          </div>
+          <div class="element-row" data-key="e">
+            <div class="element-top"><div class="element-name"><span class="symbol">e</span><span>Eccentricity</span></div><output id="value-e">0.20</output></div>
+            <input id="slider-e" type="range" min="0" max="0.6" step="0.001" value="0.2" aria-label="Eccentricity">
+            <div class="element-limits"><span id="min-e">0.00</span><span>e</span><span id="max-e">1.500</span></div>
+          </div>
+          <div class="element-row" data-key="i">
+            <div class="element-top"><div class="element-name"><span class="symbol">i</span><span>Inclination</span></div><output id="value-i">51.60°</output></div>
+            <input id="slider-i" type="range" min="0" max="180" step="0.1" value="51.6" aria-label="Inclination">
+            <div class="element-limits"><span>0°</span><span>°</span><span>180°</span></div>
+          </div>
+          <div class="element-row" data-key="raan">
+            <div class="element-top"><div class="element-name"><span class="symbol">Ω</span><span>Right ascension of ascending node</span></div><output id="value-raan">35.00°</output></div>
+            <input id="slider-raan" type="range" min="0" max="360" step="0.1" value="35" aria-label="Right ascension of ascending node">
+            <div class="element-limits"><span>0°</span><span>°</span><span>360°</span></div>
+          </div>
+          <div class="element-row" data-key="argp">
+            <div class="element-top"><div class="element-name"><span class="symbol">ω</span><span>Argument of perigee</span></div><output id="value-argp">45.00°</output></div>
+            <input id="slider-argp" type="range" min="0" max="360" step="0.1" value="45" aria-label="Argument of perigee">
+            <div class="element-limits"><span>0°</span><span>°</span><span>360°</span></div>
+          </div>
+          <div class="element-row theta-row" data-key="theta">
+            <div class="element-top"><div class="element-name"><span class="symbol">θ</span><span>True anomaly</span></div><output id="value-theta">25.00°</output><label class="animate-toggle" title="Animate satellite along the orbit"><input id="animateToggle" type="checkbox"><span class="toggle-track"><i></i></span><span class="animate-label">ANIMATE</span></label></div>
+            <input id="slider-theta" type="range" min="0" max="360" step="0.1" value="25" aria-label="True anomaly">
+            <div class="element-limits"><span>0° · PERIGEE</span><span>°</span><span>360°</span></div>
+          </div>
+        </div>
+
+        <div class="simulation-strip earth-mode-only" id="simulationStrip">
+          <div class="simulation-state"><span class="sim-led" id="simLed"></span><span id="simStateText">PAUSED</span></div>
+          <div class="speed-control"><label for="timeScale">SIM RATE</label><select id="timeScale" aria-label="Simulation time scale"><option value="1">1×</option><option value="60">60×</option><option value="600" selected>600×</option><option value="3600">3600×</option></select></div>
+          <button class="reset-button" id="resetButton" type="button" title="Reset orbital elements">↺ <span>RESET</span></button>
+        </div>
+
+        <div class="vector-section earth-mode-only">
+          <div class="section-heading"><span>STATE VECTOR</span><span class="frame-label" id="frameLabel">ECI · CARTESIAN</span></div>
+          <div class="vector-grid">
+            <div class="vector-card position-card" title="r: geocentric position vector resolved along ECI X, Y and Z axes">
+              <div class="vector-card-head"><span class="vector-symbol r-symbol">r</span><span>POSITION</span><small>m</small></div>
+              <div class="vector-values" id="positionVector"><span>X <b>—</b></span><span>Y <b>—</b></span><span>Z <b>—</b></span></div>
+              <div class="speed-result position-result"><span>POSITION MAGNITUDE</span><strong id="positionMagnitudeValue">— <small>m</small></strong></div>
+            </div>
+            <div class="vector-card velocity-card" title="v: geocentric velocity vector resolved along ECI X, Y and Z axes">
+              <div class="vector-card-head"><span class="vector-symbol v-symbol">v</span><span>VELOCITY</span><small>m/s</small></div>
+              <div class="vector-values" id="velocityVector"><span>X <b>—</b></span><span>Y <b>—</b></span><span>Z <b>—</b></span></div>
+              <div class="speed-result"><span>SPEED MAGNITUDE</span><strong id="speedValue">— <small>m/s</small></strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="derived-strip earth-mode-only">
+          <div><span>SEMI-MAJOR AXIS</span><strong id="semiMajorValue">—</strong></div>
+          <div><span>PERIGEE ALT.</span><strong id="perigeeValue">—</strong></div>
+          <div><span>APOGEE ALT.</span><strong id="apogeeValue">—</strong></div>
+        </div>
+        
+        <div class="panel-footer"><span>CREATED BY <b>SORUSH NASERI</b></span><span class="footer-version">VERSION 1.0.6</span></div>
+      </aside>
+    </main>
+
+
+
+    <div class="settings-overlay" id="settingsOverlay" hidden>
+      <button class="settings-backdrop" id="settingsBackdrop" type="button" aria-label="Close settings"></button>
+      <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="settings-header">
+          <div><div class="eyebrow">SCENE CUSTOMIZATION</div><h2 id="settingsTitle">Settings</h2></div>
+          <button class="close-settings" id="settingsClose" type="button" aria-label="Close settings">×</button>
+        </div>
+        <div class="settings-tabs"><button class="settings-tab active" data-tab="display" type="button">DISPLAY</button><button class="settings-tab" data-tab="layers" type="button">LAYERS & COLORS</button><button class="settings-tab" data-tab="angles" type="button">ANGLES</button></div>
+        <div class="settings-content" id="settingsDisplay">
+          <div class="settings-group-title">CENTRAL BODY</div>
+          <div class="setting-slider"><div><label for="planetOpacity">Body opacity</label><output id="planetOpacityValue">100%</output></div><input id="planetOpacity" type="range" min="0.15" max="1" step="0.01" value="1"></div>
+          <div class="setting-color-row"><label for="bodyTint">Body base tint</label><input id="bodyTint" type="color" value="#286c9b"><span>Used when texture intensity is reduced</span></div>
+          <div class="setting-slider"><div><label for="textureStrength">Texture intensity</label><output id="textureStrengthValue">100%</output></div><input id="textureStrength" type="range" min="0" max="1" step="0.01" value="1"></div>
+          <div class="setting-slider"><div><label for="equatorialScale">Equatorial plane size</label><output id="equatorialScaleValue">1.35×</output></div><input id="equatorialScale" type="range" min="1.0" max="2.8" step="0.01" value="1.35"></div>
+          <div class="setting-slider"><div><label for="atmosphereOpacity">Atmosphere glow</label><output id="atmosphereOpacityValue">58%</output></div><input id="atmosphereOpacity" type="range" min="0" max="1" step="0.01" value="0.58"></div>
+          <div class="setting-toggle"><div><strong>Atmosphere halo</strong><small>Soft Fresnel rim around the body</small></div><label class="switch"><input id="atmosphereToggle" type="checkbox" checked><span></span></label></div>
+          <div class="setting-toggle"><div><strong>Glow on parameter changes</strong><small>Brief highlight when a slider moves</small></div><label class="switch"><input id="changeGlowToggle" type="checkbox" checked><span></span></label></div>
+          <div class="settings-group-title range-group-title">ORBITAL SLIDER RANGES</div>
+          <div class="range-settings-grid">
+            <label>h minimum (m²/s)<input id="rangeHMin" type="number" min="1000000000" step="1000000000" value="10000000000"></label>
+            <label>h maximum (m²/s)<input id="rangeHMax" type="number" min="10000000000" step="1000000000" value="280000000000"></label>
+            <label>e minimum<input id="rangeEMin" type="number" min="0" max="0.99" step="0.01" value="0"></label>
+            <label>e maximum<input id="rangeEMax" type="number" min="0.01" max="3" step="0.01" value="1.5"></label>
+          </div>
+          <div class="settings-group-title range-group-title">SOLAR ORBIT PATHS</div>
+          <label class="setting-toggle">
+            <div><strong>Earth around Sun</strong><small>Faint dashed heliocentric reference path; appears when zoomed out and in frame</small></div>
+            <span class="switch"><input id="showEarthSolarOrbit" type="checkbox"><span></span></span>
+          </label>
+          <div class="settings-note"><b>Earth rotation</b><span>Sidereal spin is independent of satellite motion and accelerated 600× in Earth view for visibility.</span></div>
+          <div class="settings-actions"><button id="restoreSettings" type="button">RESTORE DEFAULTS</button></div>
+        </div>
+        <div class="settings-content" id="settingsLayers" hidden>
+          <div class="settings-note layers-intro"><b>Visual layers</b><span>Change a layer's color, visibility and transparency. The scene updates immediately.</span></div>
+          <div id="layerSettingsList" class="layer-settings-list"></div>
+          <div class="settings-actions"><button id="restoreLayerDefaults" type="button">RESTORE COLORS</button><span>Saved on this device</span></div>
+        </div>
+        <div class="settings-content" id="settingsAngles" hidden>
+          <div class="settings-note layers-intro"><b>3D angle annotations</b><span>Show geometric arcs and symbols directly in the orbital scene. Undefined angles are automatically hidden for singular orbit geometries.</span></div>
+          <div class="angle-setting-list">
+            <label class="setting-toggle"><div><strong>Ω · Right ascension of ascending node</strong><small>Angle in the equatorial plane from ECI X to the ascending node</small></div><span class="switch"><input id="angle-raan" type="checkbox" checked><span></span></span></label>
+            <label class="setting-toggle"><div><strong>i · Inclination</strong><small>Angle between the equatorial and orbital planes</small></div><span class="switch"><input id="angle-inclination" type="checkbox" checked><span></span></span></label>
+            <label class="setting-toggle"><div><strong>ω · Argument of perigee</strong><small>Angle in the orbital plane from the ascending node to perigee</small></div><span class="switch"><input id="angle-argp" type="checkbox" checked><span></span></span></label>
+            <label class="setting-toggle"><div><strong>θ · True anomaly</strong><small>Angle in the orbital plane from perigee to the position vector</small></div><span class="switch"><input id="angle-theta" type="checkbox" checked><span></span></span></label>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="file-protocol-screen" aria-live="polite">
+    <div class="file-protocol-card">
+      <div class="brand-title">ORBITAL <span>LAB</span></div>
+      <h1>Start the local preview</h1>
+      <p>This Three.js version uses JavaScript modules. For security reasons, browsers do not load these modules reliably from a <code>file://</code> address.</p>
+      <p>Close this tab, then double-click <strong>run.bat</strong> in the project folder. The first run installs local dependencies and prepares the local Earth map when an internet connection is available; later launches work offline.</p>
+    </div>
+  </section>
+  <script>
+    if (location.protocol === 'file:') document.documentElement.classList.add('file-protocol');
+  </script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
