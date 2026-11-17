@@ -426,7 +426,7 @@ export class OrbitalRenderer {
     const nodeGeometry = new THREE.BufferGeometry();
     nodeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3));
     this.nodeLine = new THREE.LineSegments(nodeGeometry, new THREE.LineDashedMaterial({ color: defaultVisuals.nodeLine.color, dashSize: .10, gapSize: .065, transparent: true, opacity: defaultVisuals.nodeLine.opacity }));
-    this.nodeLine.userData.tooltip = 'Line of nodes · intersection of equatorial and orbital planes · ECI';
+    this.nodeLine.userData.tooltip = 'Reference node line N · direction defined by RAAN in the equatorial plane · ECI';
     this.earthSystemGroup.add(this.nodeLine);
 
     this.axesGroup = new THREE.Group();
