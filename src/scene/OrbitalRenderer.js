@@ -1094,9 +1094,44 @@ export class OrbitalRenderer {
     this.applyVisuals();
   }
 
-  getSimulationDate(timeSec = this.timeSec) {
-    return new Date(this.solarEpochDate.getTime() + (Number(timeSec) || 0) * 1000);
-  }
+getSimulationDate(timeSec = this.timeSec) {
+  return new Date(this.solarEpochDate.getTime() + (Number(timeSec) || 0) * 1000);
+}
+
+setSimulationDate(date) {
+  const selectedDate = date instanceof Date
+    ? new Date(date.getTime())
+    : new Date(date);
+
+  if (Number.isNaN(selectedDate.getTime())) return;
+
+  const timeSec = Number(this.timeSec) || 0;
+  const selectedMeanAnomaly = Solar.meanAnomalyAtDate(selectedDate);
+
+  const epochMeanAnomaly = Solar.mod(
+    selectedMeanAnomaly
+      - (2 * Math.PI * timeSec) / (Solar.yearDays * 86400),
+    2 * Math.PI
+  );
+
+  this.solarEpochDate = new Date(selectedDate.getTime() - timeSec * 1000);
+  this.solarMeanAnomaly = epochMeanAnomaly;
+  this.solarEpochMeanAnomaly = epochMeanAnomaly;
+
+  this.earthRotationAngle = greenwichSiderealAngle(selectedDate);
+  this.bodyGroup.rotation.y = this.earthRotationAngle;
+
+  const solarState = Solar.stateAtMeanAnomaly(selectedMeanAnomaly);
+
+  this.sunDirection
+    .copy(eciToThree(solarState.sunDirectionECI))
+    .normalize();
+
+  this.sunDistance = solarState.distanceAU * Solar.AU / P.bodies.earth.radius;
+
+  this.updateSunPlacement();
+  this.updateSolarOrbitPaths(selectedMeanAnomaly);
+}
 
   setState(elements, timeSec, running, speed, pulseStart) {
     this.elements = elements;
