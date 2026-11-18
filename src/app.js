@@ -145,6 +145,10 @@ function formatH(value) {
   return `${coefficient.toFixed(2)} × 10${superscript(exponent)}`;
 }
 
+function formatHWithUnit(value) {
+  return `${formatH(value)} <small>m²/s</small>`;
+}
+
 function formatTime(seconds, period) {
   const sign = seconds < 0 ? '−' : '+';
   const t = Math.abs(seconds);
@@ -258,7 +262,7 @@ function syncElementControls() {
     setSlider(key, state.target[key]);
     const output = $(`value-${key}`);
     if (!output) continue;
-    if (key === 'h') output.textContent = formatH(state.target.h);
+    if (key === 'h') output.innerHTML = formatHWithUnit(state.target.h);
     else if (key === 'e') output.textContent = state.target.e.toFixed(3);
     else output.textContent = `${state.target[key].toFixed(2)}°`;
   }
@@ -289,7 +293,7 @@ function updateTargetFromUI(key, sliderValue) {
   state.pulseStart = performance.now();
   if (state.settings.glowOnChange) state.renderer.pulseStart = state.pulseStart;
   const output = $(`value-${key}`);
-  if (output) output.textContent = key === 'h' ? formatH(value) : key === 'e' ? value.toFixed(3) : `${value.toFixed(2)}°`;
+  if (output) output.innerHTML = key === 'h' ? formatHWithUnit(value) : key === 'e' ? value.toFixed(3) : `${value.toFixed(2)}°`;
 }
 
 function updateSolarDateReadout() {
@@ -556,20 +560,33 @@ function initSettings() {
 }
 
 function setViewMode(mode) {
-  state.viewMode = mode === '2d' ? '2d' : 'earth';
+  state.viewMode = ['earth', '2d', 'satellite'].includes(mode) ? mode : 'earth';
   state.renderer.setViewMode(state.viewMode);
+
+  const nextView = state.viewMode === 'earth' ? '2d' : state.viewMode === '2d' ? 'satellite' : 'earth';
+  const nextViewLabel = { earth: 'EARTH VIEW', '2d': '2D VIEW', satellite: 'SATELLITE' }[nextView];
   const toggle = $('sunViewToggle');
   const label = $('sunViewToggleLabel');
   if (toggle) {
-    toggle.classList.toggle('active', state.viewMode === '2d');
+    toggle.classList.toggle('active', state.viewMode !== 'earth');
     toggle.dataset.mode = state.viewMode;
+    toggle.title = `Switch to ${nextView === '2d' ? '2D orbital' : nextView} view`;
+    toggle.setAttribute('aria-label', toggle.title);
   }
-  if (label) label.textContent = state.viewMode === '2d' ? 'EARTH VIEW' : '2D VIEW';
+  if (label) label.textContent = nextViewLabel;
 
-  $('referenceFrameName').textContent = state.viewMode === '2d' ? 'ORBITAL PLANE NORMAL' : 'GEOCENTRIC INERTIAL';
-  $('frameCoordinates').textContent = state.viewMode === '2d'
-    ? 'Fixed normal view · orbital plane'
-    : 'X · vernal equinox · Y · 90° E · Z · north';
+  const frameNames = {
+    earth: 'GEOCENTRIC INERTIAL',
+    '2d': 'ORBITAL PLANE NORMAL',
+    satellite: 'SATELLITE FOLLOW CAMERA'
+  };
+  const frameDescriptions = {
+    earth: 'X · vernal equinox · Y · 90° E · Z · north',
+    '2d': 'Fixed normal view · orbital plane',
+    satellite: 'Camera offset to +v · aiming at the −r surface point'
+  };
+  $('referenceFrameName').textContent = frameNames[state.viewMode];
+  $('frameCoordinates').textContent = frameDescriptions[state.viewMode];
   $('bodyNameHud').textContent = 'EARTH';
   $('bodyMetaHud').textContent = 'μ 3.986 × 10¹⁴ m³/s²';
 
@@ -582,7 +599,7 @@ function setViewMode(mode) {
   $('orbitStatus').dataset.state = metrics.isElliptic && metrics.perigeeAltitude > 0 ? 'valid' : 'special';
   document.querySelector('.scene-time .readout-label').textContent = 'TIME FROM PERIGEE';
   document.querySelector('.scene-period .readout-label').textContent = 'ORBITAL PERIOD';
-  $('frameSubtitle').textContent = state.viewMode === '2d' ? '2D ORBITAL VIEW' : 'ECI FRAME';
+  $('frameSubtitle').textContent = state.viewMode === '2d' ? '2D ORBITAL VIEW' : state.viewMode === 'satellite' ? 'SATELLITE VIEW' : 'ECI FRAME';
   $('frameLabel').textContent = 'ECI · CARTESIAN';
   syncPlotOptions();
   if (!$('plotDock').hidden) drawPlot();
@@ -867,7 +884,10 @@ function initControls() {
     state.renderer.resetTrail();
   });
 
-  $('sunViewToggle').addEventListener('click', () => { setViewMode(state.viewMode === 'earth' ? '2d' : 'earth'); });
+  $('sunViewToggle').addEventListener('click', () => {
+    const next = state.viewMode === 'earth' ? '2d' : state.viewMode === '2d' ? 'satellite' : 'earth';
+    setViewMode(next);
+  });
   $('sceneCanvas').addEventListener('orbital-camera-home', () => setViewMode('earth'));
   $('plotToggle').addEventListener('click', () => {
     $('plotDock').hidden = !$('plotDock').hidden;

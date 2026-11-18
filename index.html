@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="description" content="An offline-first interactive orbital mechanics laboratory with Earth and 2D orbital views.">
-  <title>ORBITAL LAB — Version 1.0.0</title>
+  <title>ORBITAL LAB</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -47,7 +47,7 @@
             <div class="scene-period"><span class="readout-label">ORBITAL PERIOD</span><strong id="periodReadout">—</strong></div>
           </div>
           <div class="scene-actions">
-            <button class="scene-view-toggle" id="sunViewToggle" type="button" title="Toggle Earth and 2D views">
+            <button class="scene-view-toggle" id="sunViewToggle" type="button" title="Switch camera view">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 1.8v2.1M12 20.1v2.1M1.8 12h2.1m16.2 0h2.1M4.8 4.8l1.5 1.5m11.4 11.4 1.5 1.5m0-14.4-1.5 1.5M6.3 17.7l-1.5 1.5"/></svg>
               <span id="sunViewToggleLabel">2D VIEW</span>
             </button>
@@ -144,38 +144,45 @@
           <div class="element-row" data-key="h">
             <div class="element-top"><div class="element-name"><span class="symbol">h</span><span>Specific angular momentum</span></div><output id="value-h">7.47 × 10¹⁰</output></div>
             <input id="slider-h" type="range" min="0" max="100" step="0.01" value="52" aria-label="Specific angular momentum">
-            <div class="element-limits"><span id="min-h">MIN</span><span>m²/s</span><span id="max-h">MAX</span></div>
+            <div class="element-limits"><span id="min-h">MIN</span><span id="max-h">MAX</span></div>
           </div>
           <div class="element-row" data-key="e">
             <div class="element-top"><div class="element-name"><span class="symbol">e</span><span>Eccentricity</span></div><output id="value-e">0.20</output></div>
             <input id="slider-e" type="range" min="0" max="0.6" step="0.001" value="0.2" aria-label="Eccentricity">
-            <div class="element-limits"><span id="min-e">0.00</span><span>e</span><span id="max-e">1.500</span></div>
+            <div class="element-limits"><span id="min-e">0.00</span><span id="max-e">1.500</span></div>
           </div>
           <div class="element-row" data-key="i">
             <div class="element-top"><div class="element-name"><span class="symbol">i</span><span>Inclination</span></div><output id="value-i">51.60°</output></div>
             <input id="slider-i" type="range" min="0" max="180" step="0.1" value="51.6" aria-label="Inclination">
-            <div class="element-limits"><span>0°</span><span>°</span><span>180°</span></div>
+            <div class="element-limits"><span>0°</span><span>180°</span></div>
           </div>
           <div class="element-row" data-key="raan">
             <div class="element-top"><div class="element-name"><span class="symbol">Ω</span><span>Right ascension of ascending node</span></div><output id="value-raan">35.00°</output></div>
             <input id="slider-raan" type="range" min="0" max="360" step="0.1" value="35" aria-label="Right ascension of ascending node">
-            <div class="element-limits"><span>0°</span><span>°</span><span>360°</span></div>
+            <div class="element-limits"><span>0°</span><span>360°</span></div>
           </div>
           <div class="element-row" data-key="argp">
             <div class="element-top"><div class="element-name"><span class="symbol">ω</span><span>Argument of perigee</span></div><output id="value-argp">45.00°</output></div>
             <input id="slider-argp" type="range" min="0" max="360" step="0.1" value="45" aria-label="Argument of perigee">
-            <div class="element-limits"><span>0°</span><span>°</span><span>360°</span></div>
+            <div class="element-limits"><span>0°</span><span>360°</span></div>
           </div>
           <div class="element-row theta-row" data-key="theta">
-            <div class="element-top"><div class="element-name"><span class="symbol">θ</span><span>True anomaly</span></div><output id="value-theta">25.00°</output><label class="animate-toggle" title="Animate satellite along the orbit"><input id="animateToggle" type="checkbox"><span class="toggle-track"><i></i></span><span class="animate-label">ANIMATE</span></label></div>
+            <div class="element-top"><div class="element-name"><span class="symbol">θ</span><span>True anomaly</span></div><output id="value-theta">25.00°</output></div>
             <input id="slider-theta" type="range" min="0" max="360" step="0.1" value="25" aria-label="True anomaly">
-            <div class="element-limits"><span>0° · PERIGEE</span><span>°</span><span>360°</span></div>
+            <div class="element-limits"><span>0° · PERIGEE</span><span>360°</span></div>
           </div>
         </div>
 
         <div class="simulation-strip earth-mode-only" id="simulationStrip">
           <div class="simulation-state"><span class="sim-led" id="simLed"></span><span id="simStateText">PAUSED</span></div>
-          <div class="speed-control"><label for="timeScale">SIM RATE</label><select id="timeScale" aria-label="Simulation time scale"><option value="1">1×</option><option value="60">60×</option><option value="600" selected>600×</option><option value="3600">3600×</option></select></div>
+          <div class="simulation-controls">
+            <label class="animate-toggle simulation-animate-toggle" title="Animate satellite along the orbit">
+              <input id="animateToggle" type="checkbox">
+              <span class="toggle-track"><i></i></span>
+              <span class="animate-label">ANIMATE</span>
+            </label>
+            <div class="speed-control"><label for="timeScale">SIM RATE</label><select id="timeScale" aria-label="Simulation time scale"><option value="1">1×</option><option value="60">60×</option><option value="600" selected>600×</option><option value="3600">3600×</option></select></div>
+          </div>
           <button class="reset-button" id="resetButton" type="button" title="Reset orbital elements">↺ <span>RESET</span></button>
         </div>
 
@@ -201,7 +208,7 @@
           <div><span>APOGEE ALT.</span><strong id="apogeeValue">—</strong></div>
         </div>
         
-        <div class="panel-footer"><span>CREATED BY <b>SORUSH NASERI</b></span><span class="footer-version">VERSION 1.0.0</span></div>
+        <div class="panel-footer"><span>CREATED BY <b>SORUSH NASERI</b></span><span class="footer-version">VERSION 1.1.0</span></div>
       </aside>
     </main>
 

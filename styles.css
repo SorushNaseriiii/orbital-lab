@@ -1178,3 +1178,83 @@ body.settings-open .settings-panel {
     padding: 12px;
   }
 }
+
+
+/* ORBITAL LAB 1.1.0 — compact simulation controls and single unit readouts */
+.element-top output small {
+  margin-left: 4px;
+  color: #8297b2;
+  font-size: .72em;
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.simulation-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+.simulation-strip .simulation-state {
+  justify-self: start;
+  margin-right: 0;
+}
+.simulation-controls {
+  display: flex;
+  align-items: center;
+  justify-self: center;
+  gap: 16px;
+  min-width: 0;
+}
+.simulation-strip .reset-button {
+  justify-self: end;
+  margin-left: 0;
+}
+.simulation-animate-toggle {
+  gap: 7px;
+  margin: 0;
+}
+.simulation-animate-toggle .toggle-track {
+  width: 34px;
+  height: 18px;
+}
+.simulation-animate-toggle .toggle-track i {
+  width: 10px;
+  height: 10px;
+  left: 3px;
+  top: 3px;
+}
+.simulation-animate-toggle input:checked + .toggle-track i {
+  left: 19px;
+}
+.simulation-animate-toggle .animate-label {
+  font-size: 9px;
+}
+
+@media (max-width: 760px) {
+  .simulation-controls { gap: 8px; }
+  .simulation-animate-toggle { gap: 5px; }
+  .simulation-animate-toggle .toggle-track { width: 29px; height: 16px; }
+  .simulation-animate-toggle .toggle-track i { width: 8px; height: 8px; left: 3px; top: 3px; }
+  .simulation-animate-toggle input:checked + .toggle-track i { left: 16px; }
+  .simulation-animate-toggle .animate-label { font-size: 7px; }
+  .simulation-strip .speed-control { gap: 4px; }
+  .simulation-strip .speed-control label { font-size: 6px; }
+  .simulation-strip .speed-control select { min-width: 58px; padding: 5px 5px; font-size: 8px; }
+}
+
+@media (max-width: 760px) and (orientation: landscape) {
+  .simulation-strip { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; }
+  .simulation-controls { gap: 5px; }
+  .simulation-animate-toggle { gap: 3px; }
+  .simulation-animate-toggle .toggle-track { width: 23px; height: 13px; }
+  .simulation-animate-toggle .toggle-track i { width: 7px; height: 7px; left: 2px; top: 2px; }
+  .simulation-animate-toggle input:checked + .toggle-track i { left: 12px; }
+  .simulation-animate-toggle .animate-label { font-size: 5px; }
+  .simulation-strip .speed-control label { font-size: 5px; }
+  .simulation-strip .speed-control select { min-width: 43px; padding: 2px 3px; font-size: 7px; }
+}
+
+@media (max-width: 760px) {
+  .scene-view-toggle:not(.plot-toggle) { min-width: 88px; }
+}

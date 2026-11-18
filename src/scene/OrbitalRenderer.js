@@ -268,6 +268,7 @@ export class OrbitalRenderer {
     this.solarMeanAnomaly = Solar.meanAnomalyAtDate(this.solarEpochDate);
     this.solarEpochMeanAnomaly = this.solarMeanAnomaly;
     this.savedEarthCamera = null;
+    this.lastSatelliteBaseDistance = null;
     this.lastFittedCameraDistance = 0;
     this.sunDirection = eciToThree(Solar.apparentSunDirectionECI(this.solarEpochDate)).normalize();
     const earthRadius = P.bodies.earth.radius;
@@ -473,8 +474,8 @@ export class OrbitalRenderer {
     for (const label of Object.values(this.vectorLabels)) { label.scale.set(.34, .34, 1); this.earthSystemGroup.add(label); }
 
     this.satelliteGroup = this.createSatellite();
-    this.satelliteGroup.userData.tooltip = 'Satellite · position and local orbital frame';
-    this.satelliteGroup.traverse((child) => { if (child.isMesh) child.userData.tooltip = 'Satellite · body and solar panels'; });
+    this.satelliteGroup.userData.tooltip = 'Satellite';
+    this.satelliteGroup.traverse((child) => { if (child.isMesh) child.userData.tooltip = 'Satellite'; });
     this.earthSystemGroup.add(this.satelliteGroup);
     this.glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeGlowTexture(), color: '#8ceaff', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .18 }));
     this.glowSprite.scale.set(.72, .72, .72);
@@ -846,6 +847,13 @@ export class OrbitalRenderer {
     this.nodeLine.visible = this.visual('nodeLine').visible;
   }
 
+  velocityVectorLength(elements = this.elements) {
+    const speed = P.state(elements, this.bodyKey, elements.theta).speed;
+    // A bounded physical-magnitude scale: a typical low-Earth-orbit speed is about 7.8 km/s.
+    // It deliberately does not use camera distance, so zooming cannot inflate this vector.
+    return clamp(.22 + (speed / 7800) * .78, .22, 1.28);
+  }
+
   updateArrows(elements) {
     const state = P.state(elements, this.bodyKey, elements.theta);
     const radius = P.bodies[this.bodyKey].radius;
@@ -857,8 +865,8 @@ export class OrbitalRenderer {
     const matrix = P.rotationMatrix(elements.raan, elements.i, elements.argp);
     const eccentricityDirection = eciToThree([matrix[0][0], matrix[1][0], matrix[2][0]]).normalize();
     const vectorText = (values, unit) => values.map((value) => `${value.toExponential(2)} ${unit}`).join(', ');
-    const rTip = `r · position from Earth centre to satellite · ECI components: ${vectorText(state.r, 'm')}`;
-    const vTip = `v · instantaneous direction of motion, tangent to the trajectory · ECI components: ${vectorText(state.v, 'm/s')}`;
+    const rTip = 'Position Vector';
+    const vTip = 'Velocity Vector';
     const hTip = `h = r × v · normal to the orbital plane · ECI components: ${vectorText(state.hVec, 'm²/s')}`;
     const eTip = `e · eccentricity direction points toward perigee · ECI · e = ${elements.e.toFixed(3)}`;
     for (const [arrow, tip] of [[this.rArrow, rTip], [this.vArrow, vTip], [this.hArrow, hTip], [this.eArrow, eTip]]) {
@@ -871,7 +879,9 @@ export class OrbitalRenderer {
     const rStart = radialDirection.clone().multiplyScalar(EARTH_SURFACE_CLEARANCE);
     const rLength = Math.max(.001, position.length() - EARTH_SURFACE_CLEARANCE);
     const vOrigin = position.clone().add(radialDirection.clone().multiplyScalar(.14));
-    const vLength = clipRayLengthOutsideSphere(vOrigin, velocityDirection, .78 * scale);
+    const vMagnitudeScale = this.velocityVectorLength(elements);
+    const vLength = clipRayLengthOutsideSphere(vOrigin, velocityDirection, vMagnitudeScale);
+    const vHead = clamp(.095 + vMagnitudeScale * .055, .11, .17);
     // Specific angular momentum is a geocentric vector: its mathematical origin is Earth's centre.
     // The globe depth buffer naturally occludes the portion of the vector inside the solid Earth.
     const hOrigin = new THREE.Vector3(0, 0, 0);
@@ -881,7 +891,7 @@ export class OrbitalRenderer {
     const eLength = Math.min(2.8, Math.max(.08, elements.e * 1.55)) * scale;
 
     this.setArrow(this.rArrow, rStart, radialDirection, rLength, .18 * scale);
-    this.setArrow(this.vArrow, vOrigin, velocityDirection, vLength, .15 * scale);
+    this.setArrow(this.vArrow, vOrigin, velocityDirection, vLength, vHead);
     this.setArrow(this.hArrow, hOrigin, angularMomentumDirection, hLength, hHead);
     this.setArrow(this.eArrow, eOrigin, eccentricityDirection, eLength, .14 * scale);
     this.rArrow.visible = this.visual('rVector').visible && rLength > .015;
@@ -889,7 +899,7 @@ export class OrbitalRenderer {
     this.hArrow.visible = this.visual('hVector').visible;
     this.eArrow.visible = this.visual('eVector').visible && elements.e > 1e-5;
 
-    const vLabel = keepPointOutsideSphere(vOrigin.clone().add(velocityDirection.clone().multiplyScalar(vLength + .16 * scale)), 1.42);
+    const vLabel = keepPointOutsideSphere(vOrigin.clone().add(velocityDirection.clone().multiplyScalar(vLength + vHead * 1.25)), 1.42);
     const labelPositions = {
       rVector: position.clone().add(radialDirection.clone().multiplyScalar(.48 * scale)),
       vVector: vLabel,
@@ -1118,9 +1128,6 @@ setSimulationDate(date) {
   this.solarMeanAnomaly = epochMeanAnomaly;
   this.solarEpochMeanAnomaly = epochMeanAnomaly;
 
-  this.earthRotationAngle = greenwichSiderealAngle(selectedDate);
-  this.bodyGroup.rotation.y = this.earthRotationAngle;
-
   const solarState = Solar.stateAtMeanAnomaly(selectedMeanAnomaly);
 
   this.sunDirection
@@ -1157,9 +1164,11 @@ setSimulationDate(date) {
     const height = Math.max(1, Math.floor(rect.height));
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.controls.minDistance = this.cameraMinDistance();
+    this.controls.minDistance = this.viewMode === 'satellite'
+      ? Math.max(.08, (this.lastSatelliteBaseDistance || .5) * .65)
+      : this.cameraMinDistance();
     const currentDistance = this.camera.position.distanceTo(this.controls.target);
-    if (currentDistance < this.controls.minDistance) {
+    if (this.viewMode !== 'satellite' && currentDistance < this.controls.minDistance) {
       const direction = this.camera.position.clone().sub(this.controls.target).normalize();
       this.camera.position.copy(this.controls.target).addScaledVector(direction, this.controls.minDistance);
       this.camera.lookAt(this.controls.target);
@@ -1226,6 +1235,48 @@ setSimulationDate(date) {
     return { pAxis, qAxis, normal };
   }
 
+  satelliteCameraPose(elements = this.elements) {
+    const state = P.state(elements, this.bodyKey, elements.theta);
+    const bodyRadius = P.bodies[this.bodyKey].radius;
+    const satellitePosition = eciToThree(state.r.map((value) => value / bodyRadius));
+    const radial = satellitePosition.clone().normalize();
+    const velocity = eciToThree(state.v).normalize();
+    const normal = eciToThree(state.hVec).normalize();
+
+    // Place the camera ahead/right of the satellite along +v. With the camera up
+    // aligned to h, the trailing path (-v) naturally falls toward the left of frame.
+    const satelliteScale = this.satelliteGroup?.scale.x || .45;
+    const portraitOffset = this.camera.aspect < 1 ? .25 : 0;
+    const sideOffset = clamp(.68 + satelliteScale * .42 + portraitOffset, .72, 1.2);
+    const radialOffset = clamp(.10 + satelliteScale * .15, .12, .26);
+    const target = radial.clone().multiplyScalar(EARTH_SURFACE_CLEARANCE);
+    const position = satellitePosition
+      .clone()
+      .addScaledVector(velocity, sideOffset)
+      .addScaledVector(radial, radialOffset);
+
+    return { position, target, up: normal };
+  }
+
+  updateSatelliteCameraFrame() {
+    if (this.viewMode !== 'satellite' || this.cameraTransition?.isViewTransition) return;
+    const pose = this.satelliteCameraPose(this.elements);
+    const desiredOffset = pose.position.clone().sub(pose.target);
+    const desiredDistance = Math.max(.001, desiredOffset.length());
+    const previousBaseDistance = this.lastSatelliteBaseDistance || desiredDistance;
+    const currentDistance = this.camera.position.distanceTo(this.controls.target);
+    const zoomFactor = clamp(currentDistance / previousBaseDistance, .65, 3.2);
+
+    this.controls.minDistance = Math.max(.08, desiredDistance * .65);
+    this.controls.maxDistance = Math.max(this.controls.minDistance + .1, desiredDistance * 3.2);
+    this.controls.target.copy(pose.target);
+    this.camera.up.copy(pose.up);
+    this.camera.position.copy(pose.target).addScaledVector(desiredOffset, zoomFactor);
+    this.camera.lookAt(pose.target);
+    this.camera.updateMatrixWorld();
+    this.lastSatelliteBaseDistance = desiredDistance;
+  }
+
   update2DCameraFrame() {
     if (this.viewMode !== '2d' || this.cameraTransition?.isViewTransition) return;
     const { pAxis, qAxis, normal } = this.orbitalCameraBasis(this.elements);
@@ -1246,6 +1297,8 @@ setSimulationDate(date) {
     for (const label of Object.values(this.vectorLabels || {})) {
       label.scale.set(scale, scale * .36, 1);
     }
+    const vLabelScale = clamp(.72 + this.velocityVectorLength(this.elements) * .28, .78, 1.08);
+    this.vectorLabels?.vVector?.scale.set(vLabelScale, vLabelScale * .36, 1);
     const axisScale = clamp(orbitScale * distanceScale, .85, 7.5);
     const axisLength = 1.65 * axisScale;
     const axisDirections = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0)];
@@ -1273,7 +1326,7 @@ setSimulationDate(date) {
     const body = P.bodies[this.bodyKey];
     const metrics = P.orbitalMetrics(this.elements, this.bodyKey);
     const cameraDistance = Math.max(this.cameraFitDistance(this.elements), this.cameraMinDistance());
-    {
+    if (this.viewMode !== 'satellite') {
       this.controls.maxDistance = Math.max(100000, cameraDistance * 3.2);
       if (!this.userInteracting && !this.cameraTransition && Math.abs(cameraDistance - this.lastFittedCameraDistance) > Math.max(.35, this.lastFittedCameraDistance * .08)) {
         this.flushControlDamping();
@@ -1303,6 +1356,12 @@ setSimulationDate(date) {
         transition.toTarget.copy(up).multiplyScalar(this.cameraFrameOffset(targetDistance));
         transition.toPosition.copy(transition.toTarget).addScaledVector(normal, targetDistance);
         transition.toUp.copy(up);
+      }
+      if (transition.isViewTransition && this.viewMode === 'satellite') {
+        const pose = this.satelliteCameraPose(this.elements);
+        transition.toPosition.copy(pose.position);
+        transition.toTarget.copy(pose.target);
+        transition.toUp.copy(pose.up);
       }
       const raw = clamp((now - transition.start) / transition.duration, 0, 1);
       const eased = raw * raw * (3 - 2 * raw);
@@ -1366,6 +1425,7 @@ setSimulationDate(date) {
 
     this.controls.update();
     this.update2DCameraFrame();
+    this.updateSatelliteCameraFrame();
     this.updateEarthNightLightUniforms();
     this.updateSolarOrbitVisibility();
     this.renderer.render(this.scene, this.camera);
@@ -1431,14 +1491,14 @@ setSimulationDate(date) {
   }
 
   setViewMode(mode) {
-    const nextMode = mode === '2d' ? '2d' : 'earth';
+    const nextMode = ['earth', '2d', 'satellite'].includes(mode) ? mode : 'earth';
     if (nextMode === this.viewMode) return this.viewMode;
     this.flushControlDamping();
 
     const fromPosition = this.camera.position.clone();
     const fromTarget = this.controls.target.clone();
     const fromUp = this.camera.up.clone().normalize();
-    if (this.viewMode === 'earth' && nextMode === '2d') {
+    if (this.viewMode === 'earth' && nextMode !== 'earth') {
       this.savedEarthCamera = { position: fromPosition.clone(), target: fromTarget.clone(), up: fromUp.clone() };
     }
 
@@ -1447,48 +1507,57 @@ setSimulationDate(date) {
     this.sunGroup.visible = true;
     this.bodyGroup.visible = true;
     this.orbitalFrame.visible = true;
-    this.controls.enableZoom = true;
     this.controls.enablePan = false;
+    this.controls.enableRotate = nextMode === 'earth';
+    this.controls.enableZoom = true;
 
-    const distance = Math.max(this.cameraFitDistance(this.elements), this.cameraMinDistance());
-    const toTarget = this.framedTarget(nextMode, distance, this.elements);
+    let toTarget;
     let toPosition;
     let toUp;
-
     if (nextMode === '2d') {
+      const distance = Math.max(this.cameraFitDistance(this.elements), this.cameraMinDistance());
       const { pAxis, qAxis, normal } = this.orbitalCameraBasis(this.elements);
-      // Keep the periapsis direction in the upper-right quadrant of the orbital-plane view.
       toUp = pAxis.clone().add(qAxis).normalize();
+      toTarget = this.framedTarget('2d', distance, this.elements);
       toPosition = toTarget.clone().addScaledVector(normal, distance);
-      this.controls.enableRotate = false;
+    } else if (nextMode === 'satellite') {
+      const pose = this.satelliteCameraPose(this.elements);
+      toTarget = pose.target;
+      toPosition = pose.position;
+      toUp = pose.up;
     } else {
+      const distance = Math.max(this.cameraFitDistance(this.elements), this.cameraMinDistance());
+      toTarget = this.framedTarget('earth', distance, this.elements);
       toUp = new THREE.Vector3(0, 1, 0);
-      this.controls.enableRotate = true;
       const savedDirection = this.savedEarthCamera?.position.clone().sub(this.savedEarthCamera.target).normalize();
       const direction = savedDirection || new THREE.Vector3(.46, .34, .82).normalize();
       toPosition = toTarget.clone().addScaledVector(direction, distance);
     }
 
-    this.camera.far = Math.max(1000000, distance * 16);
+    const transitionDistance = Math.max(.08, toPosition.distanceTo(toTarget));
+    this.camera.far = Math.max(1000000, transitionDistance * 16, this.cameraFitDistance(this.elements) * 16);
     this.camera.near = .08;
     this.camera.updateProjectionMatrix();
-    this.controls.maxDistance = Math.max(100000, distance * 3.2);
-    this.controls.minDistance = this.cameraMinDistance();
+    this.controls.maxDistance = Math.max(100000, this.cameraFitDistance(this.elements) * 3.2);
+    this.controls.minDistance = nextMode === 'satellite'
+      ? Math.max(.08, transitionDistance * .65)
+      : this.cameraMinDistance();
+    this.lastSatelliteBaseDistance = nextMode === 'satellite' ? transitionDistance : null;
     this.cameraTransition = {
       start: performance.now(),
-      duration: 950,
+      duration: 1050,
       restoreDamping: this.cameraDampingEnabled,
       fromPosition,
       fromTarget,
       fromUp,
-      toPosition,
-      toTarget,
-      toUp,
+      toPosition: toPosition.clone(),
+      toTarget: toTarget.clone(),
+      toUp: toUp.clone(),
       isViewTransition: true
     };
     this.controls.enabled = false;
     this.controls.enableDamping = false;
-    this.lastFittedCameraDistance = distance;
+    this.lastFittedCameraDistance = this.cameraFitDistance(this.elements);
     this.updateSunPlacement();
     this.applyVisuals();
     return this.viewMode;
@@ -1626,7 +1695,7 @@ setSimulationDate(date) {
     const arcScale = clamp(scale * clamp(Math.sqrt(zoomScale), .85, 2.2), .85, 2.2);
 
     this.updateAngleArc(this.angleAnnotations.raan, eciX, eciZ, elements.raan, 1.48 * arcScale, this.settings.angleAnnotations.raan, 'Ω');
-    this.updateAngleArc(this.angleAnnotations.inclination, eciZ, inclinationAxis, elements.i, 1.38 * arcScale, this.settings.angleAnnotations.inclination && elements.i > 0.15 && elements.i < 179.85, 'i');
+    this.updateAngleArc(this.angleAnnotations.inclination, eciZ, inclinationAxis, elements.i, 1.38 * arcScale, this.settings.angleAnnotations.inclination && elements.i > 0.15 && elements.i <= 180, 'i');
     this.updateAngleArc(this.angleAnnotations.argp, node, wAxis, elements.argp, 1.55 * arcScale, this.settings.angleAnnotations.argp && elements.e > 1e-4, 'ω');
 
     const periapsisRadius = P.orbitalMetrics(elements, this.bodyKey).rp / P.bodies[this.bodyKey].radius;

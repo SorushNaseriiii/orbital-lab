@@ -1,9 +1,9 @@
 {
   "name": "orbital-lab",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "ORBITAL LAB v1.0.0 — static Three.js orbital mechanics explorer with a repaired scene layout and interactive Persian solar-date picker.",
+  "description": "ORBITAL LAB — static Three.js orbital mechanics explorer with Earth, 2D orbital-plane and satellite-follow camera views.",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },

@@ -8,8 +8,16 @@ const rendererSource = await readFile(new URL('../src/scene/OrbitalRenderer.js',
 const assetSource = await readFile(new URL('../scripts/download-assets.mjs', import.meta.url), 'utf8');
 const stylesSource = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
 
-test('only Earth and fixed 2D orbital views are exposed', () => {
-  assert.match(appSource, /state\.viewMode = mode === '2d' \? '2d' : 'earth';/);
+test('the existing camera selector cycles Earth, 2D and satellite-follow views', () => {
+  assert.match(appSource, /\['earth', '2d', 'satellite'\]\.includes\(mode\)/);
+  assert.match(appSource, /state\.viewMode === '2d' \? 'satellite' : 'earth'/);
+  assert.match(rendererSource, /satelliteCameraPose\(elements = this\.elements\)/);
+  assert.match(rendererSource, /updateSatelliteCameraFrame\(\)/);
+  assert.match(rendererSource, /addScaledVector\(velocity, sideOffset\)/);
+  assert.match(rendererSource, /this\.camera\.aspect < 1 \? \.25 : 0/);
+  assert.match(rendererSource, /this\.camera\.lookAt\(pose\.target\)/);
+  assert.match(rendererSource, /this\.controls\.enableZoom = true/);
+  assert.match(rendererSource, /const zoomFactor = clamp\(currentDistance \/ previousBaseDistance, \.65, 3\.2\)/);
   assert.doesNotMatch(appSource, /solarAnimateToggle|sunModePanel|updateSolarReadouts/);
   assert.doesNotMatch(htmlSource, /sunModePanel|solarAnimateToggle/);
 });
@@ -157,7 +165,41 @@ test('scene panel and WebGL canvas are clipped to the same rounded corners', () 
   assert.match(stylesSource, /\.scene-panel \{ --scene-radius: 13px;/);
 });
 
-test('release metadata consistently identifies ORBITAL LAB 1.0.0', () => {
-  assert.match(htmlSource, /<title>ORBITAL LAB — Version 1\.0\.0<\/title>/);
-  assert.match(htmlSource, /footer-version[^>]*>VERSION 1\.0\.0/);
+test('date selection changes solar ephemeris without resetting Earth spin', () => {
+  const setter = rendererSource.match(/setSimulationDate\(date\) \{([\s\S]*?)\n\s*\}/)?.[1] || '';
+  assert.match(setter, /this\.solarEpochDate = new Date/);
+  assert.match(setter, /this\.updateSunPlacement\(\)/);
+  assert.doesNotMatch(setter, /earthRotationAngle|bodyGroup\.rotation/);
+  assert.match(rendererSource, /const earthSpinMultiplier = this\.running \?/);
+});
+
+test('V vector length and label scale use speed magnitude rather than camera distance', () => {
+  assert.match(rendererSource, /velocityVectorLength\(elements = this\.elements\)/);
+  assert.match(rendererSource, /speed \/ 7800/);
+  assert.match(rendererSource, /const vMagnitudeScale = this\.velocityVectorLength\(elements\);[\s\S]*?clipRayLengthOutsideSphere\(vOrigin, velocityDirection, vMagnitudeScale\)/);
+  assert.match(rendererSource, /vVector\?\.scale\.set\(vLabelScale/);
+});
+
+test('r, v and satellite hover labels are concise', () => {
+  assert.match(rendererSource, /const rTip = 'Position Vector'/);
+  assert.match(rendererSource, /const vTip = 'Velocity Vector'/);
+  assert.match(rendererSource, /this\.satelliteGroup\.userData\.tooltip = 'Satellite'/);
+  assert.doesNotMatch(rendererSource, /Satellite · body and solar panels/);
+});
+
+test('Animate toggle shares the simulation-rate panel and slider units are not duplicated', () => {
+  assert.match(htmlSource, /class="simulation-controls"[\s\S]*?id="animateToggle"[\s\S]*?id="timeScale"/);
+  assert.doesNotMatch(htmlSource, /<div class="element-limits"><span>[^<]*<\/span><span>[^<]*<\/span><span>/);
+  assert.match(appSource, /formatHWithUnit/);
+  assert.match(htmlSource, /id="value-h"/);
+});
+
+test('inclination annotation remains visible at exactly 180 degrees', () => {
+  assert.match(rendererSource, /elements\.i > 0\.15 && elements\.i <= 180/);
+});
+
+test('browser tab title omits the release version while the app identifies release 1.1.0', () => {
+  assert.match(htmlSource, /<title>ORBITAL LAB<\/title>/);
+  assert.doesNotMatch(htmlSource.match(/<title>[\s\S]*?<\/title>/)?.[0] || '', /version|1\.1\.0/i);
+  assert.match(htmlSource, /footer-version[^>]*>VERSION 1\.1\.0/);
 });
