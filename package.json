@@ -1,6 +1,6 @@
 {
   "name": "orbital-lab",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "ORBITAL LAB — static Three.js orbital mechanics explorer with Earth, 2D orbital-plane and satellite-follow camera views.",

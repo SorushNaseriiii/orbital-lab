@@ -41,7 +41,7 @@ button { color: inherit; }
 .icon-button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 12px; background: rgba(18,29,46,.7); cursor: pointer; transition: .2s ease; }
 .icon-button:hover { border-color: rgba(107,216,237,.5); background: rgba(38,57,82,.75); transform: translateY(-1px); }
 .icon-button svg { width: 17px; height: 17px; display: block; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.settings-trigger svg { transform: translateX(.6px); }
+.settings-trigger svg { width: 17px; height: 17px; transform: none; transform-origin: 50% 50%; }
 .workspace { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.14fr) minmax(420px, .86fr); gap: 13px; transition: grid-template-columns .28s ease, grid-template-rows .28s ease; }
 .panel-surface { position: relative; min-height: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(145deg, rgba(17,28,46,.94), rgba(9,15,26,.96)); box-shadow: var(--shadow); }
 .scene-panel {
@@ -1180,7 +1180,7 @@ body.settings-open .settings-panel {
 }
 
 
-/* ORBITAL LAB 1.1.0 — compact simulation controls and single unit readouts */
+/* ORBITAL LAB 1.0.0 — compact simulation controls and single unit readouts */
 .element-top output small {
   margin-left: 4px;
   color: #8297b2;
@@ -1257,4 +1257,62 @@ body.settings-open .settings-panel {
 
 @media (max-width: 760px) {
   .scene-view-toggle:not(.plot-toggle) { min-width: 88px; }
+}
+
+
+/* ORBITAL LAB 1.0.0 — balanced simulation control alignment */
+.simulation-strip {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 11px;
+  gap: 10px;
+}
+.simulation-strip .simulation-state {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  margin: 0;
+  white-space: nowrap;
+}
+.simulation-controls {
+  min-height: 28px;
+  align-items: center;
+  justify-self: center;
+  gap: 14px;
+}
+.simulation-animate-toggle {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 2px;
+}
+.simulation-animate-toggle .toggle-track { flex: 0 0 auto; }
+.simulation-strip .speed-control { min-height: 28px; align-items: center; gap: 7px; }
+.simulation-strip .speed-control select { min-height: 28px; padding: 4px 8px; }
+.simulation-strip .reset-button {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  margin: 0;
+  padding: 0 1px 0 8px;
+  line-height: 1;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .simulation-strip { min-height: 40px; padding: 5px 8px; gap: 7px; }
+  .simulation-strip .simulation-state { min-height: 26px; font-size: 7px; gap: 5px; }
+  .simulation-controls { min-height: 26px; gap: 8px; }
+  .simulation-animate-toggle { min-height: 26px; gap: 5px; }
+  .simulation-strip .speed-control { min-height: 26px; gap: 4px; }
+  .simulation-strip .speed-control select { min-height: 26px; padding: 4px 5px; }
+  .simulation-strip .reset-button { min-height: 26px; padding-left: 5px; }
+}
+@media (max-width: 760px) and (orientation: landscape) {
+  .simulation-strip { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 4px; }
+  .simulation-controls { gap: 5px; }
 }

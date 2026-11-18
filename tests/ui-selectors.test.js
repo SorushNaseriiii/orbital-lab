@@ -170,7 +170,15 @@ test('date selection changes solar ephemeris without resetting Earth spin', () =
   assert.match(setter, /this\.solarEpochDate = new Date/);
   assert.match(setter, /this\.updateSunPlacement\(\)/);
   assert.doesNotMatch(setter, /earthRotationAngle|bodyGroup\.rotation/);
-  assert.match(rendererSource, /const earthSpinMultiplier = this\.running \?/);
+  assert.match(rendererSource, /const earthSpinMultiplier = this\.running && !this\.dateScrubbing \?/);
+});
+
+test('Earth axial rotation pauses only while the solar-date slider is being scrubbed', () => {
+  assert.match(rendererSource, /this\.dateScrubbing = false/);
+  assert.match(rendererSource, /beginSimulationDateScrub\(\) \{\s*this\.dateScrubbing = true/);
+  assert.match(rendererSource, /endSimulationDateScrub\(\) \{\s*this\.dateScrubbing = false/);
+  assert.match(appSource, /solarDateSlider\?\.addEventListener\('pointerdown',[\s\S]*?beginSimulationDateScrub/);
+  assert.match(appSource, /solarDateSlider\?\.addEventListener\('change', endSolarDateScrub\)/);
 });
 
 test('V vector length and label scale use speed magnitude rather than camera distance', () => {
@@ -195,11 +203,42 @@ test('Animate toggle shares the simulation-rate panel and slider units are not d
 });
 
 test('inclination annotation remains visible at exactly 180 degrees', () => {
-  assert.match(rendererSource, /elements\.i > 0\.15 && elements\.i <= 180/);
+  assert.match(rendererSource, /const inclinationDegrees = clamp\(Number\(elements\.i\) \|\| 0, 0, 180\)/);
+  assert.match(rendererSource, /const inclinationArcDegrees = inclinationDegrees >= 180 \? 179\.999 : inclinationDegrees/);
+  assert.match(rendererSource, /inclinationDegrees > 0\.15[\s\S]*?inclinationDegrees <= 180/);
 });
 
-test('browser tab title omits the release version while the app identifies release 1.1.0', () => {
+test('browser tab title omits the release version while the app identifies release 1.0.0', () => {
   assert.match(htmlSource, /<title>ORBITAL LAB<\/title>/);
   assert.doesNotMatch(htmlSource.match(/<title>[\s\S]*?<\/title>/)?.[0] || '', /version|1\.1\.0/i);
-  assert.match(htmlSource, /footer-version[^>]*>VERSION 1\.1\.0/);
+  assert.match(htmlSource, /footer-version[^>]*>VERSION 1\.0\.0/);
+});
+
+
+test('satellite camera sits below the orbital plane while remaining on the velocity-right side', () => {
+  assert.match(rendererSource, /const planeDropOffset = clamp\(\.34 \+ satelliteScale \* \.10 \+ portraitOffset \* \.06, \.34, \.44\)/);
+  assert.match(rendererSource, /addScaledVector\(velocity, sideOffset\)[\s\S]*?addScaledVector\(normal, -planeDropOffset\)/);
+  assert.match(rendererSource, /return \{ position, target, up: normal \}/);
+});
+
+test('heliocentric date changes rotate the distant starfield without rotating the Earth body', () => {
+  assert.match(rendererSource, /this\.starField = makeStars\(\)/);
+  assert.match(rendererSource, /updateStarFieldRotation\(meanAnomaly = this\.solarEpochMeanAnomaly\)/);
+  assert.match(rendererSource, /this\.starField\.quaternion\.setFromAxisAngle\(eclipticNorth, -longitudeDelta\)/);
+  assert.match(rendererSource, /this\.updateStarFieldRotation\(selectedMeanAnomaly\)/);
+  assert.match(rendererSource, /this\.updateStarFieldRotation\(simulatedSolarMean\)/);
+  assert.match(rendererSource, /this\.bodyGroup\.rotation\.y = this\.earthRotationAngle/);
+});
+
+test('release 1.0.0 removes redundant unit and settings helper labels', () => {
+  assert.doesNotMatch(htmlSource, /SI UNITS|<b>Earth rotation<\/b>|<b>Visual layers<\/b>|<b>3D angle annotations<\/b>/);
+  assert.match(htmlSource, /footer-version[^>]*>VERSION 1\.0\.0/);
+});
+
+test('settings gear is centered and simulation controls share a consistent vertical rhythm', () => {
+  assert.match(htmlSource, /<circle cx="12" cy="12" r="2\.65"\/>/);
+  assert.match(stylesSource, /\.settings-trigger svg \{[^}]*transform: none/s);
+  assert.match(stylesSource, /\.simulation-strip \{[\s\S]*?min-height: 44px/);
+  assert.match(stylesSource, /\.simulation-state \{[\s\S]*?min-height: 28px/);
+  assert.match(stylesSource, /\.simulation-strip \.reset-button \{[\s\S]*?min-height: 28px/);
 });

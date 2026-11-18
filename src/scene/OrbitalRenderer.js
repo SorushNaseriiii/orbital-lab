@@ -238,6 +238,7 @@ export class OrbitalRenderer {
     this.elements = P.defaultElements('earth');
     this.timeSec = P.timeSincePerigee(this.elements.theta, this.elements, 'earth');
     this.running = false;
+    this.dateScrubbing = false;
     this.speed = 600;
     this.pulseStart = 0;
     this.settings = {
@@ -267,6 +268,7 @@ export class OrbitalRenderer {
     this.solarEpochDate = new Date();
     this.solarMeanAnomaly = Solar.meanAnomalyAtDate(this.solarEpochDate);
     this.solarEpochMeanAnomaly = this.solarMeanAnomaly;
+    this.solarSkyReferenceLongitude = Solar.stateAtMeanAnomaly(this.solarEpochMeanAnomaly).longitude;
     this.savedEarthCamera = null;
     this.lastSatelliteBaseDistance = null;
     this.lastFittedCameraDistance = 0;
@@ -280,7 +282,8 @@ export class OrbitalRenderer {
     this.hoveredObject = null;
 
     this.scene = new THREE.Scene();
-    this.scene.add(makeStars());
+    this.starField = makeStars();
+    this.scene.add(this.starField);
     this.camera = new THREE.PerspectiveCamera(39, 1, .08, 1000000);
     this.camera.position.set(4.8, 3.5, 7.0);
     this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
@@ -1137,7 +1140,26 @@ setSimulationDate(date) {
   this.sunDistance = solarState.distanceAU * Solar.AU / P.bodies.earth.radius;
 
   this.updateSunPlacement();
+  this.updateStarFieldRotation(selectedMeanAnomaly);
   this.updateSolarOrbitPaths(selectedMeanAnomaly);
+}
+
+updateStarFieldRotation(meanAnomaly = this.solarEpochMeanAnomaly) {
+  if (!this.starField) return;
+  const solarState = Solar.stateAtMeanAnomaly(meanAnomaly);
+  const longitudeDelta = solarState.longitude - this.solarSkyReferenceLongitude;
+  const eclipticNorth = eciToThree([0, -Math.sin(Solar.obliquity), Math.cos(Solar.obliquity)]).normalize();
+  // In the Earth-following view, the distant sky drifts opposite to Earth's
+  // heliocentric orbital longitude, making the annual motion perceptible.
+  this.starField.quaternion.setFromAxisAngle(eclipticNorth, -longitudeDelta);
+}
+
+beginSimulationDateScrub() {
+  this.dateScrubbing = true;
+}
+
+endSimulationDateScrub() {
+  this.dateScrubbing = false;
 }
 
   setState(elements, timeSec, running, speed, pulseStart) {
@@ -1250,10 +1272,12 @@ setSimulationDate(date) {
     const sideOffset = clamp(.68 + satelliteScale * .42 + portraitOffset, .72, 1.2);
     const radialOffset = clamp(.10 + satelliteScale * .15, .12, .26);
     const target = radial.clone().multiplyScalar(EARTH_SURFACE_CLEARANCE);
+    const planeDropOffset = clamp(.34 + satelliteScale * .10 + portraitOffset * .06, .34, .44);
     const position = satellitePosition
       .clone()
       .addScaledVector(velocity, sideOffset)
-      .addScaledVector(radial, radialOffset);
+      .addScaledVector(radial, radialOffset)
+      .addScaledVector(normal, -planeDropOffset);
 
     return { position, target, up: normal };
   }
@@ -1400,7 +1424,7 @@ setSimulationDate(date) {
 
     const deltaSeconds = this.lastRenderTimestamp === null ? 0 : Math.min((now - this.lastRenderTimestamp) / 1000, 0.1);
     this.lastRenderTimestamp = now;
-    const earthSpinMultiplier = this.running ? Math.max(0, this.speed || 0) : 0;
+    const earthSpinMultiplier = this.running && !this.dateScrubbing ? Math.max(0, this.speed || 0) : 0;
     this.earthRotationAngle = (this.earthRotationAngle + deltaSeconds * earthSpinMultiplier * (2 * Math.PI / body.rotation)) % (2 * Math.PI);
     this.bodyGroup.rotation.y = this.earthRotationAngle;
 
@@ -1408,6 +1432,7 @@ setSimulationDate(date) {
     const simulatedSolarState = Solar.stateAtMeanAnomaly(simulatedSolarMean);
     this.sunDirection.copy(eciToThree(simulatedSolarState.sunDirectionECI)).normalize();
     this.updateSunPlacement();
+    this.updateStarFieldRotation(simulatedSolarMean);
     this.sunCore.material.opacity = .98;
     this.sunGlow.material.opacity = .82;
     this.sunLabel.visible = false;
@@ -1695,7 +1720,15 @@ setSimulationDate(date) {
     const arcScale = clamp(scale * clamp(Math.sqrt(zoomScale), .85, 2.2), .85, 2.2);
 
     this.updateAngleArc(this.angleAnnotations.raan, eciX, eciZ, elements.raan, 1.48 * arcScale, this.settings.angleAnnotations.raan, 'Ω');
-    this.updateAngleArc(this.angleAnnotations.inclination, eciZ, inclinationAxis, elements.i, 1.38 * arcScale, this.settings.angleAnnotations.inclination && elements.i > 0.15 && elements.i <= 180, 'i');
+    // Clamp the value before checking visibility, so a floating-point overshoot
+    // cannot hide the arc at the 180° retrograde endpoint. Use a tiny endpoint
+    // epsilon to keep the half-turn drawable without changing the displayed value.
+    const inclinationDegrees = clamp(Number(elements.i) || 0, 0, 180);
+    const inclinationArcDegrees = inclinationDegrees >= 180 ? 179.999 : inclinationDegrees;
+    const inclinationVisible = this.settings.angleAnnotations.inclination
+      && inclinationDegrees > 0.15
+      && inclinationDegrees <= 180;
+    this.updateAngleArc(this.angleAnnotations.inclination, eciZ, inclinationAxis, inclinationArcDegrees, 1.38 * arcScale, inclinationVisible, 'i');
     this.updateAngleArc(this.angleAnnotations.argp, node, wAxis, elements.argp, 1.55 * arcScale, this.settings.angleAnnotations.argp && elements.e > 1e-4, 'ω');
 
     const periapsisRadius = P.orbitalMetrics(elements, this.bodyKey).rp / P.bodies[this.bodyKey].radius;

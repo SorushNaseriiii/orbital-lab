@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="description" content="An offline-first interactive orbital mechanics laboratory with Earth and 2D orbital views.">
+  <meta name="description" content="An offline-first interactive orbital mechanics laboratory with Earth, 2D orbital-plane and satellite-follow camera views.">
   <title>ORBITAL LAB</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
@@ -34,7 +34,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/></svg>
         </button>
         <button class="icon-button settings-trigger" id="settingsOpen" type="button" aria-label="Open settings" title="Scene settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.1a3.9 3.9 0 1 0 0 7.8 3.9 3.9 0 0 0 0-7.8Z"/><path d="m19.2 13.1 1.3 1-.9 2.2-1.6-.1a6.9 6.9 0 0 1-1.2 1.2l.1 1.6-2.2.9-1-1.3a7.1 7.1 0 0 1-1.7 0l-1 1.3-2.2-.9.1-1.6a6.9 6.9 0 0 1-1.2-1.2l-1.6.1-.9-2.2 1.3-1a7.1 7.1 0 0 1 0-1.7l-1.3-1 .9-2.2 1.6.1a6.9 6.9 0 0 1 1.2-1.2l-.1-1.6 2.2-.9 1 1.3a7.1 7.1 0 0 1 1.7 0l1-1.3 2.2.9-.1 1.6a6.9 6.9 0 0 1 1.2 1.2l1.6-.1.9 2.2-1.3 1a7.1 7.1 0 0 1 0 1.7Z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.93 4.40 L9.73 2.16 L14.27 2.16 L15.07 4.40 L15.20 4.45 L17.35 3.43 L20.57 6.65 L19.55 8.80 L19.60 8.93 L21.84 9.73 L21.84 14.27 L19.60 15.07 L19.55 15.20 L20.57 17.35 L17.35 20.57 L15.20 19.55 L15.07 19.60 L14.27 21.84 L9.73 21.84 L8.93 19.60 L8.80 19.55 L6.65 20.57 L3.43 17.35 L4.45 15.20 L4.40 15.07 L2.16 14.27 L2.16 9.73 L4.40 8.93 L4.45 8.80 L3.43 6.65 L6.65 3.43 L8.80 4.45 Z"/><circle cx="12" cy="12" r="2.65"/></svg>
         </button>
       </div>
     </header>
@@ -47,7 +47,7 @@
             <div class="scene-period"><span class="readout-label">ORBITAL PERIOD</span><strong id="periodReadout">—</strong></div>
           </div>
           <div class="scene-actions">
-            <button class="scene-view-toggle" id="sunViewToggle" type="button" title="Switch camera view">
+            <button class="scene-view-toggle" id="sunViewToggle" type="button" title="Cycle Earth, 2D and satellite camera views" aria-label="Cycle Earth, 2D and satellite camera views">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 1.8v2.1M12 20.1v2.1M1.8 12h2.1m16.2 0h2.1M4.8 4.8l1.5 1.5m11.4 11.4 1.5 1.5m0-14.4-1.5 1.5M6.3 17.7l-1.5 1.5"/></svg>
               <span id="sunViewToggleLabel">2D VIEW</span>
             </button>
@@ -138,11 +138,10 @@
             <div class="eyebrow">ORBIT DEFINITION</div>
             <h1>Classical elements</h1>
           </div>
-          <div class="unit-tag">SI UNITS</div>
         </div>
         <div class="element-list earth-mode-only" id="elementList">
           <div class="element-row" data-key="h">
-            <div class="element-top"><div class="element-name"><span class="symbol">h</span><span>Specific angular momentum</span></div><output id="value-h">7.47 × 10¹⁰</output></div>
+            <div class="element-top"><div class="element-name"><span class="symbol">h</span><span>Specific angular momentum</span></div><output id="value-h">7.47 × 10¹⁰ <small>m²/s</small></output></div>
             <input id="slider-h" type="range" min="0" max="100" step="0.01" value="52" aria-label="Specific angular momentum">
             <div class="element-limits"><span id="min-h">MIN</span><span id="max-h">MAX</span></div>
           </div>
@@ -208,7 +207,7 @@
           <div><span>APOGEE ALT.</span><strong id="apogeeValue">—</strong></div>
         </div>
         
-        <div class="panel-footer"><span>CREATED BY <b>SORUSH NASERI</b></span><span class="footer-version">VERSION 1.1.0</span></div>
+        <div class="panel-footer"><span>CREATED BY <b>SORUSH NASERI</b></span><span class="footer-version">VERSION 1.0.0</span></div>
       </aside>
     </main>
 
@@ -243,16 +242,13 @@
             <div><strong>Earth around Sun</strong><small>Faint dashed heliocentric reference path; appears when zoomed out and in frame</small></div>
             <span class="switch"><input id="showEarthSolarOrbit" type="checkbox"><span></span></span>
           </label>
-          <div class="settings-note"><b>Earth rotation</b><span>Sidereal spin is independent of satellite motion and accelerated 600× in Earth view for visibility.</span></div>
           <div class="settings-actions"><button id="restoreSettings" type="button">RESTORE DEFAULTS</button></div>
         </div>
         <div class="settings-content" id="settingsLayers" hidden>
-          <div class="settings-note layers-intro"><b>Visual layers</b><span>Change a layer's color, visibility and transparency. The scene updates immediately.</span></div>
           <div id="layerSettingsList" class="layer-settings-list"></div>
           <div class="settings-actions"><button id="restoreLayerDefaults" type="button">RESTORE COLORS</button><span>Saved on this device</span></div>
         </div>
         <div class="settings-content" id="settingsAngles" hidden>
-          <div class="settings-note layers-intro"><b>3D angle annotations</b><span>Show geometric arcs and symbols directly in the orbital scene. Undefined angles are automatically hidden for singular orbit geometries.</span></div>
           <div class="angle-setting-list">
             <label class="setting-toggle"><div><strong>Ω · Right ascension of ascending node</strong><small>Angle in the equatorial plane from ECI X to the ascending node</small></div><span class="switch"><input id="angle-raan" type="checkbox" checked><span></span></span></label>
             <label class="setting-toggle"><div><strong>i · Inclination</strong><small>Angle between the equatorial and orbital planes</small></div><span class="switch"><input id="angle-inclination" type="checkbox" checked><span></span></span></label>
