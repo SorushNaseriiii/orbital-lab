@@ -55,7 +55,7 @@ function defaultSettings() {
   return {
     planetOpacity: 1,
     textureStrength: 1,
-    atmosphereOpacity: 0.58,
+    atmosphereOpacity: 0.15,
     showAtmosphere: true,
     glowOnChange: true,
     equatorialScale: 1.35,
@@ -105,12 +105,23 @@ function loadSettings() {
     }
     const stored = JSON.parse(current || legacy || 'null');
     const merged = mergeSettings(defaultSettings(), stored);
-    if (!current) {
-      // v1.0.4 introduced the 10% Sun-direction default; preserve any custom v1.0.4 setting.
-      if (legacyVersion === 'v103' || legacyVersion === 'v102') merged.visuals.sunDirection.opacity = 0.10;
-      // v1.0.2 could persist Orbital Plane as visible; migrate that old default only.
-      if (legacyVersion === 'v102') merged.visuals.orbitalPlane.visible = false;
-    }
+   if (stored) {
+  if (merged.atmosphereOpacity === 0.58) {
+    merged.atmosphereOpacity = 0.15;
+  }
+
+  if (merged.visuals?.equatorialPlane?.opacity === 0.075) {
+    merged.visuals.equatorialPlane.opacity = 0.04;
+  }
+}
+
+if (!current) {
+  // v1.0.4 introduced the 10% Sun-direction default; preserve any custom v1.0.4 setting.
+  if (legacyVersion === 'v103' || legacyVersion === 'v102') merged.visuals.sunDirection.opacity = 0.10;
+
+  // v1.0.2 could persist Orbital Plane as visible; migrate that old default only.
+  if (legacyVersion === 'v102') merged.visuals.orbitalPlane.visible = false;
+}
     return merged;
   } catch {
     return defaultSettings();
@@ -282,9 +293,33 @@ function updateTargetFromUI(key, sliderValue) {
 function updateSolarDateReadout() {
   const dateOutput = $('solarDateValue');
   if (!dateOutput) return;
+
   const simulationDate = state.renderer?.getSimulationDate?.(state.timeSec) || new Date();
   dateOutput.textContent = persianDateFormatter.format(simulationDate);
   dateOutput.dateTime = simulationDate.toISOString();
+
+  const slider = $('solarDateSlider');
+  const pickerValue = $('solarDatePickerValue');
+  const startValue = $('solarDateStart');
+  const endValue = $('solarDateEnd');
+
+  if (!slider) return;
+
+  const dayIndex = solarDayIndexFromDate(simulationDate);
+
+  slider.value = String(dayIndex);
+
+  if (pickerValue) {
+    pickerValue.textContent = persianDateFormatter.format(solarDateFromDayIndex(dayIndex));
+  }
+
+  if (startValue) {
+    startValue.textContent = persianDateFormatter.format(solarDateFromDayIndex(0));
+  }
+
+  if (endValue) {
+    endValue.textContent = persianDateFormatter.format(solarDateFromDayIndex(SOLAR_YEAR_DAYS - 1));
+  }
 }
 
 function renderVectors(elements) {
