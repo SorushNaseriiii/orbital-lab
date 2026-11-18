@@ -11,6 +11,24 @@ const THIRD_OLDEST_STORAGE_KEY = 'orbital-lab-settings-v103';
 const OLDEST_STORAGE_KEY = 'orbital-lab-settings-v102';
 const persianDateFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-arabext', { day: 'numeric', month: 'long' });
 const H_SLIDER_STEPS = 1000;
+const SOLAR_YEAR_START_UTC = Date.UTC(2026, 2, 21, 12, 0, 0);
+const SOLAR_YEAR_DAYS = 365;
+const DAY_MS = 86400000;
+
+function solarDateFromDayIndex(dayIndex) {
+  const index = M.clamp(Number(dayIndex) || 0, 0, SOLAR_YEAR_DAYS - 1);
+  return new Date(SOLAR_YEAR_START_UTC + index * DAY_MS);
+}
+
+function solarDayIndexFromDate(date) {
+  const value = new Date(date);
+  const dayStart = Date.UTC(value.getFullYear(), value.getMonth(), value.getDate(), 12, 0, 0);
+  return M.clamp(
+    Math.round((dayStart - SOLAR_YEAR_START_UTC) / DAY_MS),
+    0,
+    SOLAR_YEAR_DAYS - 1
+  );
+}
 let textureRefreshTimer = null;
 
 const state = {
