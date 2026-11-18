@@ -72,7 +72,7 @@ function makeTextSprite(text, color = '#ffe0a0') {
   context.fillText(text, canvas.width / 2, canvas.height / 2);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false }));
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: true }));
   sprite.scale.set(1.05, .33, 1);
   sprite.userData.labelTexture = texture;
   return sprite;
@@ -95,6 +95,7 @@ function updateTextSprite(sprite, text, color = '#ffffff') {
   texture.colorSpace = THREE.SRGBColorSpace;
   sprite.material.map?.dispose();
   sprite.material.map = texture;
+  sprite.material.depthTest = true;
   sprite.material.needsUpdate = true;
   sprite.userData.currentText = text;
   sprite.userData.currentColor = color;
@@ -1130,6 +1131,8 @@ setSimulationDate(date) {
   this.solarEpochDate = new Date(selectedDate.getTime() - timeSec * 1000);
   this.solarMeanAnomaly = epochMeanAnomaly;
   this.solarEpochMeanAnomaly = epochMeanAnomaly;
+  this.earthRotationAngle = greenwichSiderealAngle(selectedDate);
+  this.bodyGroup.rotation.y = this.earthRotationAngle;
 
   const solarState = Solar.stateAtMeanAnomaly(selectedMeanAnomaly);
 
@@ -1269,13 +1272,14 @@ endSimulationDateScrub() {
     // aligned to h, the trailing path (-v) naturally falls toward the left of frame.
     const satelliteScale = this.satelliteGroup?.scale.x || .45;
     const portraitOffset = this.camera.aspect < 1 ? .25 : 0;
-    const sideOffset = clamp(.68 + satelliteScale * .42 + portraitOffset, .72, 1.2);
-    const radialOffset = clamp(.10 + satelliteScale * .15, .12, .26);
+    const sideOffset = clamp(.60 + satelliteScale * .36 + portraitOffset * .18, .64, 1.06);
+    const radialOffset = clamp(.18 + satelliteScale * .16, .18, .32);
     const target = radial.clone().multiplyScalar(EARTH_SURFACE_CLEARANCE);
-    const planeDropOffset = clamp(.34 + satelliteScale * .10 + portraitOffset * .06, .34, .44);
+    const planeDropOffset = clamp(.40 + satelliteScale * .12 + portraitOffset * .08, .40, .52);
+    const aftOffset = clamp(.10 + satelliteScale * .06, .10, .18);
     const position = satellitePosition
       .clone()
-      .addScaledVector(velocity, sideOffset)
+      .addScaledVector(velocity, sideOffset - aftOffset)
       .addScaledVector(radial, radialOffset)
       .addScaledVector(normal, -planeDropOffset);
 
@@ -1589,7 +1593,7 @@ endSimulationDateScrub() {
   }
 
   createAngleAnnotation(label, color) {
-    const line = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.96, depthTest: false, depthWrite: false }));
+    const line = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.96, depthTest: true, depthWrite: false }));
     line.renderOrder = 8;
     line.userData.tooltip = `Orbital angle ${label} · 3D geometric annotation`;
     const sprite = makeTextSprite(label, color);

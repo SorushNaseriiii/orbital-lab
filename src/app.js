@@ -10,6 +10,7 @@ const OLDER_STORAGE_KEY = 'orbital-lab-settings-v104';
 const THIRD_OLDEST_STORAGE_KEY = 'orbital-lab-settings-v103';
 const OLDEST_STORAGE_KEY = 'orbital-lab-settings-v102';
 const persianDateFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-arabext', { day: 'numeric', month: 'long' });
+const timeOfDayFormatter = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const H_SLIDER_STEPS = 1000;
 const SOLAR_YEAR_START_UTC = Date.UTC(2026, 2, 21, 12, 0, 0);
 const SOLAR_YEAR_DAYS = 365;
@@ -28,6 +29,18 @@ function solarDayIndexFromDate(date) {
     0,
     SOLAR_YEAR_DAYS - 1
   );
+}
+
+function solarTimeMinutesFromDate(date) {
+  const value = new Date(date);
+  return M.clamp(value.getHours() * 60 + value.getMinutes(), 0, 1439);
+}
+
+function solarDateFromPicker(dayIndex, timeMinutes = 0) {
+  const date = solarDateFromDayIndex(dayIndex);
+  const minutes = M.clamp(Number(timeMinutes) || 0, 0, 1439);
+  date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+  return date;
 }
 let textureRefreshTimer = null;
 
@@ -305,18 +318,26 @@ function updateSolarDateReadout() {
   dateOutput.dateTime = simulationDate.toISOString();
 
   const slider = $('solarDateSlider');
+  const timeSlider = $('solarTimeSlider');
   const pickerValue = $('solarDatePickerValue');
+  const timeValue = $('solarTimePickerValue');
   const startValue = $('solarDateStart');
   const endValue = $('solarDateEnd');
 
   if (!slider) return;
 
   const dayIndex = solarDayIndexFromDate(simulationDate);
+  const timeMinutes = solarTimeMinutesFromDate(simulationDate);
 
   slider.value = String(dayIndex);
+  if (timeSlider) timeSlider.value = String(timeMinutes);
 
   if (pickerValue) {
     pickerValue.textContent = persianDateFormatter.format(solarDateFromDayIndex(dayIndex));
+  }
+
+  if (timeValue) {
+    timeValue.textContent = timeOfDayFormatter.format(simulationDate);
   }
 
   if (startValue) {
@@ -825,6 +846,7 @@ function initControls() {
   const solarDateTrigger = $('solarDateValue');
   const solarDatePicker = $('solarDatePicker');
   const solarDateSlider = $('solarDateSlider');
+  const solarTimeSlider = $('solarTimeSlider');
   const solarDatePickerClose = $('solarDatePickerClose');
 
   const setSolarDatePickerOpen = (open) => {
@@ -832,6 +854,15 @@ function initControls() {
     solarDatePicker.hidden = !open;
     solarDateTrigger.setAttribute('aria-expanded', String(open));
     if (open) updateSolarDateReadout();
+  };
+
+  const applySolarPickerSelection = ({ dayIndex = null, timeMinutes = null } = {}) => {
+    const currentDate = state.renderer?.getSimulationDate?.(state.timeSec) || new Date();
+    const resolvedDayIndex = dayIndex ?? solarDayIndexFromDate(currentDate);
+    const resolvedTimeMinutes = timeMinutes ?? solarTimeMinutesFromDate(currentDate);
+    const selectedDate = solarDateFromPicker(resolvedDayIndex, resolvedTimeMinutes);
+    state.renderer?.setSimulationDate?.(selectedDate);
+    updateSolarDateReadout();
   };
 
   solarDateTrigger?.addEventListener('click', () => {
@@ -858,17 +889,22 @@ function initControls() {
 
   solarDateSlider?.addEventListener('input', (event) => {
     state.renderer?.beginSimulationDateScrub?.();
-    const selectedDate = solarDateFromDayIndex(Number(event.target.value));
-    state.renderer?.setSimulationDate?.(selectedDate);
-    updateSolarDateReadout();
+    applySolarPickerSelection({ dayIndex: Number(event.target.value) });
+  });
+
+  solarTimeSlider?.addEventListener('input', (event) => {
+    state.renderer?.beginSimulationDateScrub?.();
+    applySolarPickerSelection({ timeMinutes: Number(event.target.value) });
   });
 
   const endSolarDateScrub = () => state.renderer?.endSimulationDateScrub?.();
-  solarDateSlider?.addEventListener('pointerdown', () => state.renderer?.beginSimulationDateScrub?.());
-  solarDateSlider?.addEventListener('pointerup', endSolarDateScrub);
-  solarDateSlider?.addEventListener('pointercancel', endSolarDateScrub);
-  solarDateSlider?.addEventListener('change', endSolarDateScrub);
-  solarDateSlider?.addEventListener('blur', endSolarDateScrub);
+  [solarDateSlider, solarTimeSlider].forEach((slider) => {
+    slider?.addEventListener('pointerdown', () => state.renderer?.beginSimulationDateScrub?.());
+    slider?.addEventListener('pointerup', endSolarDateScrub);
+    slider?.addEventListener('pointercancel', endSolarDateScrub);
+    slider?.addEventListener('change', endSolarDateScrub);
+    slider?.addEventListener('blur', endSolarDateScrub);
+  });
   window.addEventListener('blur', endSolarDateScrub);
 
   document.addEventListener('pointerdown', (event) => {
