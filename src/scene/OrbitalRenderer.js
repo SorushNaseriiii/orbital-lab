@@ -46,14 +46,12 @@ function keepPointOutsideSphere(point, minimumRadius = 1.075) {
   return point;
 }
 
-function greenwichSiderealAngle(date = new Date()) {
-  const julianDate = date.getTime() / 86400000 + 2440587.5;
-  const centuries = (julianDate - 2451545.0) / 36525;
-  const degrees = 280.46061837
-    + 360.98564736629 * (julianDate - 2451545.0)
-    + 0.000387933 * centuries * centuries
-    - (centuries * centuries * centuries) / 38710000;
-  return THREE.MathUtils.degToRad(THREE.MathUtils.euclideanModulo(degrees, 360));
+function earthRotationAngleFromTimeOfDay(date = new Date()) {
+  const secondsOfDay = date.getHours() * 3600
+    + date.getMinutes() * 60
+    + date.getSeconds()
+    + date.getMilliseconds() / 1000;
+  return THREE.MathUtils.euclideanModulo((secondsOfDay / 86400) * Math.PI * 2, Math.PI * 2);
 }
 
 
@@ -261,8 +259,8 @@ export class OrbitalRenderer {
     this.lastTheta = null;
     this.userInteracting = false;
     this.lastPulseStart = 0;
-    // Align the map's Greenwich meridian approximately with the current GMST at startup.
-    this.earthRotationAngle = greenwichSiderealAngle();
+    // The time-of-day control owns Earth spin; the date control only changes the solar ephemeris.
+    this.earthRotationAngle = earthRotationAngleFromTimeOfDay();
     this.lastRenderTimestamp = null;
     this.viewMode = 'earth';
     this.cameraTransition = null;
@@ -1120,7 +1118,11 @@ setSimulationDate(date) {
   if (Number.isNaN(selectedDate.getTime())) return;
 
   const timeSec = Number(this.timeSec) || 0;
-  const selectedMeanAnomaly = Solar.meanAnomalyAtDate(selectedDate);
+  // Solar position is sampled at a fixed time of day so changing the clock
+  // slider cannot alter the annual Earth-Sun geometry.
+  const solarDate = new Date(selectedDate.getTime());
+  solarDate.setHours(12, 0, 0, 0);
+  const selectedMeanAnomaly = Solar.meanAnomalyAtDate(solarDate);
 
   const epochMeanAnomaly = Solar.mod(
     selectedMeanAnomaly
@@ -1128,6 +1130,8 @@ setSimulationDate(date) {
     2 * Math.PI
   );
 
+  // Keep the selected calendar day and clock time for the simulation readout,
+  // while leaving Earth orientation untouched by date-only changes.
   this.solarEpochDate = new Date(selectedDate.getTime() - timeSec * 1000);
   this.solarMeanAnomaly = epochMeanAnomaly;
   this.solarEpochMeanAnomaly = epochMeanAnomaly;
@@ -1142,6 +1146,20 @@ setSimulationDate(date) {
   this.updateSunPlacement();
   this.updateStarFieldRotation(selectedMeanAnomaly);
   this.updateSolarOrbitPaths(selectedMeanAnomaly);
+}
+
+setSimulationTimeOfDay(minutes) {
+  const selectedMinutes = clamp(Math.round(Number(minutes) || 0), 0, 1439);
+  const selectedDate = this.getSimulationDate(this.timeSec);
+  selectedDate.setHours(Math.floor(selectedMinutes / 60), selectedMinutes % 60, 0, 0);
+
+  const timeSec = Number(this.timeSec) || 0;
+  this.solarEpochDate = new Date(selectedDate.getTime() - timeSec * 1000);
+
+  // Only Earth orientation changes here. Solar mean anomaly and Sun direction
+  // intentionally remain unchanged until the date control is moved.
+  this.earthRotationAngle = (selectedMinutes / 1440) * Math.PI * 2;
+  this.bodyGroup.rotation.y = this.earthRotationAngle;
 }
 
 updateStarFieldRotation(meanAnomaly = this.solarEpochMeanAnomaly) {

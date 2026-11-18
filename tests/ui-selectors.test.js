@@ -181,20 +181,34 @@ test('scene panel and WebGL canvas are clipped to the same rounded corners', () 
   assert.match(stylesSource, /\.scene-panel \{ --scene-radius: 13px;/);
 });
 
-test('date selection changes solar ephemeris without resetting Earth spin', () => {
+test('date selection changes annual solar geometry without rotating Earth', () => {
   const setter = rendererSource.match(/setSimulationDate\(date\) \{([\s\S]*?)\n\s*\}/)?.[1] || '';
   assert.match(setter, /this\.solarEpochDate = new Date/);
+  assert.match(setter, /solarDate\.setHours\(12, 0, 0, 0\)/);
   assert.match(setter, /this\.updateSunPlacement\(\)/);
   assert.doesNotMatch(setter, /earthRotationAngle|bodyGroup\.rotation/);
   assert.match(rendererSource, /const earthSpinMultiplier = this\.running && !this\.dateScrubbing \?/);
 });
 
-test('Earth axial rotation pauses only while the solar-date slider is being scrubbed', () => {
+test('time-of-day selection rotates Earth without changing the selected solar ephemeris', () => {
+  const setter = rendererSource.match(/setSimulationTimeOfDay\(minutes\) \{([\s\S]*?)\n\s*\}/)?.[1] || '';
+  assert.match(setter, /this\.earthRotationAngle = \(selectedMinutes \/ 1440\) \* Math\.PI \* 2/);
+  assert.match(setter, /this\.bodyGroup\.rotation\.y = this\.earthRotationAngle/);
+  assert.doesNotMatch(setter, /solarEpochMeanAnomaly|sunDirection|updateSunPlacement/);
+  assert.match(appSource, /else if \(timeMinutes !== null\)[\s\S]*?setSimulationTimeOfDay/);
+  assert.match(appSource, /solarTimeSlider\?\.addEventListener\('input',[\s\S]*?applySolarPickerSelection\(\{ timeMinutes:/);
+  assert.match(appSource, /solarDateSlider\?\.addEventListener\('input',[\s\S]*?applySolarPickerSelection\(\{ dayIndex:/);
+});
+
+test('Earth spin and simulation clock pause only while the date or time slider is being scrubbed', () => {
   assert.match(rendererSource, /this\.dateScrubbing = false/);
   assert.match(rendererSource, /beginSimulationDateScrub\(\) \{\s*this\.dateScrubbing = true/);
   assert.match(rendererSource, /endSimulationDateScrub\(\) \{\s*this\.dateScrubbing = false/);
+  assert.match(rendererSource, /const earthSpinMultiplier = this\.running && !this\.dateScrubbing \?/);
+  assert.match(appSource, /if \(state\.running && !state\.renderer\?\.dateScrubbing\) \{/);
   assert.match(appSource, /solarDateSlider\?\.addEventListener\('pointerdown',[\s\S]*?beginSimulationDateScrub/);
   assert.match(appSource, /solarDateSlider\?\.addEventListener\('change', endSolarDateScrub\)/);
+  assert.match(appSource, /\[solarTimeSlider\]\.forEach\(\(slider\) => \{/);
 });
 
 test('V vector length and label scale use speed magnitude rather than camera distance', () => {

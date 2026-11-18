@@ -857,11 +857,20 @@ function initControls() {
   };
 
   const applySolarPickerSelection = ({ dayIndex = null, timeMinutes = null } = {}) => {
-    const currentDate = state.renderer?.getSimulationDate?.(state.timeSec) || new Date();
-    const resolvedDayIndex = dayIndex ?? solarDayIndexFromDate(currentDate);
-    const resolvedTimeMinutes = timeMinutes ?? solarTimeMinutesFromDate(currentDate);
-    const selectedDate = solarDateFromPicker(resolvedDayIndex, resolvedTimeMinutes);
-    state.renderer?.setSimulationDate?.(selectedDate);
+    if (dayIndex !== null) {
+      const currentDate = state.renderer?.getSimulationDate?.(state.timeSec) || new Date();
+      const selectedDate = solarDateFromPicker(
+        Number(dayIndex),
+        solarTimeMinutesFromDate(currentDate)
+      );
+      // Date changes move the Earth along its heliocentric orbit and update
+      // the Sun direction, without rotating the Earth texture.
+      state.renderer?.setSimulationDate?.(selectedDate);
+    } else if (timeMinutes !== null) {
+      // Clock changes rotate the Earth under the fixed Sun direction for the
+      // selected date; they do not change the annual solar ephemeris.
+      state.renderer?.setSimulationTimeOfDay?.(Number(timeMinutes));
+    }
     updateSolarDateReadout();
   };
 
@@ -981,7 +990,7 @@ function animationFrame(now) {
   const dt = state.lastFrame ? Math.min((now - state.lastFrame) / 1000, 0.05) : 0.016;
   state.lastFrame = now;
 
-  if (state.running) {
+  if (state.running && !state.renderer?.dateScrubbing) {
     state.timeSec += dt * state.speed;
     let nextTheta = P.thetaAtTime(state.timeSec, state.target, state.bodyKey);
     if (state.target.e >= 1 - 1e-8) {
