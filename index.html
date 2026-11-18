@@ -70,20 +70,36 @@
   موقعیت زمین نسبت به خورشید بر اساس این تاریخ
 </small>
           
+
 <div class="solar-date-picker" id="solarDatePicker" hidden>
   <div class="solar-date-picker-head">
     <div class="solar-date-picker-title">
       <span>SELECT DATE</span>
       <strong id="solarDatePickerValue">—</strong>
     </div>
-
-    <button
-      class="solar-date-picker-close"
+    <button class="solar-date-picker-close"
       id="solarDatePickerClose"
       type="button"
-      aria-label="Close date picker"
-    >×</button>
+      aria-label="Close date picker">×</button>
   </div>
+
+  <input
+    id="solarDateSlider"
+    type="range"
+    min="0"
+    max="364"
+    step="1"
+    value="0"
+    dir="ltr"
+    aria-label="Solar ephemeris date"
+  >
+
+  <div class="solar-date-picker-limits" dir="ltr">
+    <span id="solarDateStart" dir="rtl">۱ فروردین</span>
+    <span id="solarDateEnd" dir="rtl">۲۹ اسفند</span>
+  </div>
+</div>
+
 
   <input
     id="solarDateSlider"
