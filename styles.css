@@ -753,7 +753,7 @@ body.settings-open .settings-panel {
 /* ORBITAL LAB v1.0.6 — solar ephemeris date readout */
 .scene-solar-date {
   position: absolute; z-index: 4; top: 48px; left: 20px; display: flex; flex-direction: column;
-  align-items: flex-start; gap: 2px; max-width: min(270px, 48%); pointer-events: none;
+  align-items: flex-start; gap: 2px; max-width: min(270px, 48%); pointer-events: auto;
   text-align: left; text-shadow: 0 1px 7px rgba(0,0,0,.9);
 }
 .scene-solar-date time {
@@ -849,5 +849,141 @@ body.settings-open .settings-panel {
 
 .solar-date-picker-limits span:last-child {
   text-align: left;
+}
+
+/* Solar Date Picker — v1.0.7 */
+
+.scene-solar-date time {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.solar-date-picker,
+.solar-date-picker * {
+  pointer-events: auto;
+}
+
+.solar-date-picker {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 50;
+  width: min(300px, calc(100vw - 32px));
+  padding: 15px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+
+  background: rgba(9, 16, 29, .97);
+  border: 1px solid rgba(107, 216, 237, .28);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+  backdrop-filter: blur(16px);
+}
+
+.solar-date-picker[hidden] {
+  display: none !important;
+}
+
+.solar-date-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solar-date-picker-title {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.solar-date-picker-title span {
+  color: #8295ad;
+  font-size: 8px;
+  letter-spacing: .15em;
+  font-weight: 800;
+}
+
+.solar-date-picker-title strong {
+  color: #e8f2ff;
+  font-size: 13px;
+}
+
+.solar-date-picker-close {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(154, 179, 214, .25);
+  border-radius: 9px;
+  background: rgba(255,255,255,.04);
+  color: #dcecff;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+#solarDateSlider {
+  display: block;
+  width: 100%;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: pan-y;
+}
+
+#solarDateSlider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 10px;
+  background: rgba(132, 148, 173, .35);
+}
+
+#solarDateSlider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 17px;
+  height: 17px;
+  margin-top: -5.5px;
+  border: 2px solid #08111e;
+  border-radius: 50%;
+  background: #6bd8ed;
+  box-shadow: 0 0 0 4px rgba(107,216,237,.17);
+  cursor: grab;
+}
+
+#solarDateSlider::-moz-range-track {
+  height: 6px;
+  border-radius: 10px;
+  background: rgba(132, 148, 173, .35);
+}
+
+#solarDateSlider::-moz-range-thumb {
+  width: 17px;
+  height: 17px;
+  border: 2px solid #08111e;
+  border-radius: 50%;
+  background: #6bd8ed;
+  cursor: grab;
+}
+
+.solar-date-picker-limits {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #9aabc2;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.solar-date-picker-limits span:first-child {
+  color: #6bd8ed;
+}
+
+.solar-date-picker-limits span:last-child {
+  color: #f4c76d;
 }
 
