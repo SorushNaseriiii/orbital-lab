@@ -148,3 +148,16 @@ test('v1.0.4 uses 10% Sun-direction opacity and dark native simulation options',
   assert.match(appSource, /merged\.visuals\.sunDirection\.opacity = 0\.10/);
   assert.match(stylesSource, /speed-control select option[^{]*\{[^}]*background-color: #0d1727/s);
 });
+
+
+test('scene panel and WebGL canvas are clipped to the same rounded corners', () => {
+  assert.match(stylesSource, /--scene-radius:\s*var\(--radius\)/);
+  assert.match(stylesSource, /clip-path:\s*inset\(0 round var\(--scene-radius\)\)/);
+  assert.match(stylesSource, /-webkit-clip-path:\s*inset\(0 round var\(--scene-radius\)\)/);
+  assert.match(stylesSource, /\.scene-panel \{ --scene-radius: 13px;/);
+});
+
+test('release metadata consistently identifies ORBITAL LAB 1.0.0', () => {
+  assert.match(htmlSource, /<title>ORBITAL LAB — Version 1\.0\.0<\/title>/);
+  assert.match(htmlSource, /footer-version[^>]*>VERSION 1\.0\.0/);
+});
