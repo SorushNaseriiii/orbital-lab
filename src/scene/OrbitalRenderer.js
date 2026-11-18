@@ -1539,11 +1539,11 @@ setSimulationDate(date) {
     annotation.sprite.visible = true;
   }
 
-  updateThetaArc(annotation, pAxis, qAxis, eccentricity, angleDegrees, periapsisRadius, visible, label, labelRadiusFactor = 1.08) {
+  updateThetaArc(annotation, pAxis, qAxis, eccentricity, angleDegrees, orbitPeriapsisRadius, thetaPeriapsisRadius, visible, label, labelRadiusFactor = 1.08) {
     annotation.group.visible = !!visible;
     const pDir = pAxis.clone().normalize();
     const qDir = qAxis.clone().normalize();
-    const signature = [visible ? 1 : 0, angleDegrees.toFixed(5), periapsisRadius.toFixed(5), eccentricity.toFixed(5), label, pDir.x.toFixed(5), pDir.y.toFixed(5), pDir.z.toFixed(5), qDir.x.toFixed(5), qDir.y.toFixed(5), qDir.z.toFixed(5)].join('|');
+    const signature = [visible ? 1 : 0, angleDegrees.toFixed(5), orbitPeriapsisRadius.toFixed(5), thetaPeriapsisRadius.toFixed(5), eccentricity.toFixed(5), label, pDir.x.toFixed(5), pDir.y.toFixed(5), pDir.z.toFixed(5), qDir.x.toFixed(5), qDir.y.toFixed(5), qDir.z.toFixed(5)].join('|');
     if (annotation.signature === signature) return;
     annotation.signature = signature;
     if (!visible) return;
@@ -1556,28 +1556,54 @@ setSimulationDate(date) {
     }
 
     const safeE = Math.max(0, Number(eccentricity) || 0);
-    const semilatusRectum = Math.max(1e-5, periapsisRadius * (1 + safeE));
-    const conicRadius = (nu) => {
-      const denominator = 1 + safeE * Math.cos(nu);
-      return denominator > 1e-5 ? semilatusRectum / denominator : periapsisRadius;
-    };
-
     const points = [];
     const steps = Math.max(24, Math.ceil(Math.abs(angleDegrees) / 3));
-    for (let index = 0; index <= steps; index++) {
-      const t = index / steps;
-      const nu = angle * t;
-      const r = conicRadius(nu);
-      const point = pDir.clone().multiplyScalar(Math.cos(nu) * r).add(qDir.clone().multiplyScalar(Math.sin(nu) * r));
-      points.push(point);
+    const safeLabelRadiusFactor = Math.max(1.02, labelRadiusFactor);
+
+    let mid;
+
+    if (safeE < 0.999 && orbitPeriapsisRadius > 1e-5) {
+      const semiMajor = orbitPeriapsisRadius / Math.max(1e-5, 1 - safeE);
+      const semiMinor = semiMajor * Math.sqrt(Math.max(1e-5, 1 - safeE * safeE));
+      const centerOffset = -semiMajor * safeE;
+      const thetaScale = THREE.MathUtils.clamp((thetaPeriapsisRadius - centerOffset) / Math.max(1e-5, semiMajor), 0.08, 0.985);
+      const labelScale = Math.min(0.995, thetaScale * safeLabelRadiusFactor);
+
+      const ellipsePoint = (nu, scale = thetaScale) => {
+        const denominator = 1 + safeE * Math.cos(nu);
+        const cosE = denominator > 1e-5 ? (safeE + Math.cos(nu)) / denominator : 1;
+        const sinE = denominator > 1e-5 ? (Math.sqrt(Math.max(0, 1 - safeE * safeE)) * Math.sin(nu)) / denominator : 0;
+        const x = centerOffset + scale * semiMajor * cosE;
+        const y = scale * semiMinor * sinE;
+        return pDir.clone().multiplyScalar(x).add(qDir.clone().multiplyScalar(y));
+      };
+
+      for (let index = 0; index <= steps; index++) {
+        const t = index / steps;
+        const nu = angle * t;
+        points.push(ellipsePoint(nu));
+      }
+      mid = ellipsePoint(angle * 0.5, labelScale);
+    } else {
+      const semilatusRectum = Math.max(1e-5, thetaPeriapsisRadius * (1 + safeE));
+      const conicRadius = (nu) => {
+        const denominator = 1 + safeE * Math.cos(nu);
+        return denominator > 1e-5 ? semilatusRectum / denominator : thetaPeriapsisRadius;
+      };
+
+      for (let index = 0; index <= steps; index++) {
+        const t = index / steps;
+        const nu = angle * t;
+        const r = conicRadius(nu);
+        points.push(pDir.clone().multiplyScalar(Math.cos(nu) * r).add(qDir.clone().multiplyScalar(Math.sin(nu) * r)));
+      }
+      const midAngle = angle * 0.5;
+      const midRadius = conicRadius(midAngle) * safeLabelRadiusFactor;
+      mid = pDir.clone().multiplyScalar(Math.cos(midAngle) * midRadius).add(qDir.clone().multiplyScalar(Math.sin(midAngle) * midRadius));
     }
 
     annotation.line.geometry.dispose();
     annotation.line.geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-    const midAngle = angle * 0.5;
-    const midRadius = conicRadius(midAngle) * Math.max(1.02, labelRadiusFactor);
-    const mid = pDir.clone().multiplyScalar(Math.cos(midAngle) * midRadius).add(qDir.clone().multiplyScalar(Math.sin(midAngle) * midRadius));
     annotation.sprite.position.copy(mid);
     updateTextSprite(annotation.sprite, label, annotation.color);
     annotation.line.visible = true;
@@ -1604,9 +1630,9 @@ setSimulationDate(date) {
     this.updateAngleArc(this.angleAnnotations.argp, node, wAxis, elements.argp, 1.55 * arcScale, this.settings.angleAnnotations.argp && elements.e > 1e-4, 'ω');
 
     const periapsisRadius = P.orbitalMetrics(elements, this.bodyKey).rp / P.bodies[this.bodyKey].radius;
-    const thetaPeriapsisRadius = Math.max(1.06, Math.min(periapsisRadius * .94, periapsisRadius - .035));
+    const thetaPeriapsisRadius = Math.max(1.075, Math.min(periapsisRadius * .92, periapsisRadius - .055));
     const thetaVisible = this.settings.angleAnnotations.theta && periapsisRadius > 1.055;
-    this.updateThetaArc(this.angleAnnotations.theta, pAxis, qAxis, elements.e, elements.theta, thetaPeriapsisRadius, thetaVisible, 'θ', 1.04);
+    this.updateThetaArc(this.angleAnnotations.theta, pAxis, qAxis, elements.e, elements.theta, periapsisRadius, thetaPeriapsisRadius, thetaVisible, 'θ', 1.04);
   }
 
   bindSceneTooltips() {
