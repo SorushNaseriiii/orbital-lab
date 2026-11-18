@@ -755,7 +755,53 @@ function initControls() {
   }
 
   $('animateToggle').addEventListener('change', (event) => toggleAnimation(event.target.checked));
-  $('timeScale').addEventListener('change', (event) => { state.speed = Number(event.target.value); });
+  $('timeScale').addEventListener('change', (event) => {
+  state.speed = Number(event.target.value);
+});
+
+const solarDateTrigger = $('solarDateValue');
+const solarDatePicker = $('solarDatePicker');
+const solarDateSlider = $('solarDateSlider');
+
+const setSolarDatePickerOpen = (open) => {
+  if (!solarDatePicker || !solarDateTrigger) return;
+  solarDatePicker.hidden = !open;
+  solarDateTrigger.setAttribute('aria-expanded', String(open));
+  if (open) updateSolarDateReadout();
+};
+
+solarDateTrigger?.addEventListener('click', () => {
+  setSolarDatePickerOpen(solarDatePicker.hidden);
+});
+
+solarDateTrigger?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    setSolarDatePickerOpen(solarDatePicker.hidden);
+  }
+
+  if (event.key === 'Escape') {
+    setSolarDatePickerOpen(false);
+  }
+});
+
+solarDateSlider?.addEventListener('input', (event) => {
+  const selectedDate = solarDateFromDayIndex(Number(event.target.value));
+  state.renderer?.setSimulationDate?.(selectedDate);
+  updateSolarDateReadout();
+});
+
+document.addEventListener('pointerdown', (event) => {
+  if (!solarDatePicker || solarDatePicker.hidden) return;
+  if (event.target === solarDateTrigger || solarDatePicker.contains(event.target)) return;
+  setSolarDatePickerOpen(false);
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && solarDatePicker && !solarDatePicker.hidden) {
+    setSolarDatePickerOpen(false);
+  }
+});
   $('resetButton').addEventListener('click', () => {
     state.running = false;
     state.target = P.defaultElements('earth');
