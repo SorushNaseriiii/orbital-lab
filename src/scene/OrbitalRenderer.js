@@ -1606,7 +1606,7 @@ setSimulationDate(date) {
     const periapsisRadius = P.orbitalMetrics(elements, this.bodyKey).rp / P.bodies[this.bodyKey].radius;
     const thetaPeriapsisRadius = Math.max(1.06, Math.min(periapsisRadius * .94, periapsisRadius - .035));
     const thetaVisible = this.settings.angleAnnotations.theta && periapsisRadius > 1.055;
-    this.updateThetaArc(this.angleAnnotations.theta, pAxis, qAxis, elements.e, elements.theta, thetaPeriapsisRadius, thetaVisible, 'θ', 1.03);
+    this.updateThetaArc(this.angleAnnotations.theta, pAxis, qAxis, elements.e, elements.theta, thetaPeriapsisRadius, thetaVisible, 'θ', 1.04);
   }
 
   bindSceneTooltips() {
