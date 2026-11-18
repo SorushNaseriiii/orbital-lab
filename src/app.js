@@ -9,7 +9,7 @@ const LEGACY_STORAGE_KEY = 'orbital-lab-settings-v105';
 const OLDER_STORAGE_KEY = 'orbital-lab-settings-v104';
 const THIRD_OLDEST_STORAGE_KEY = 'orbital-lab-settings-v103';
 const OLDEST_STORAGE_KEY = 'orbital-lab-settings-v102';
-const persianDateFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-arabext', { day: 'numeric', month: 'long', year: 'numeric' });
+const persianDateFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-arabext', { day: 'numeric', month: 'long' });
 const H_SLIDER_STEPS = 1000;
 let textureRefreshTimer = null;
 
