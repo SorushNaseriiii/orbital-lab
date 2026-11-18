@@ -6,7 +6,7 @@ import { SolarModel as Solar } from '../core/solar.js';
 const defaultVisuals = {
   orbit: { label: 'Orbit path', color: '#67d9ee', visible: true, opacity: .50 },
   orbitalPlane: { label: 'Orbital plane', color: '#4389b9', visible: false, opacity: .12 },
-  equatorialPlane: { label: 'Equatorial plane', color: '#8d9fb9', visible: true, opacity: .075 },
+  equatorialPlane: { label: 'Equatorial plane', color: '#8d9fb9', visible: true, opacity: .04 },
   eclipticPlane: { label: 'Ecliptic plane', color: '#e8bd69', visible: false, opacity: .10 },
   rVector: { label: 'Position vector r', color: '#f4c76d', visible: true, opacity: 1, legend: true },
   vVector: { label: 'Velocity vector v', color: '#ff8297', visible: true, opacity: 1, legend: true },
