@@ -758,7 +758,12 @@ function initControls() {
   $('timeScale').addEventListener('change', (event) => {
   state.speed = Number(event.target.value);
 });
+$('solarDatePickerClose')?.addEventListener('click', (event) => {
+  event.stopPropagation();
 
+  $('solarDatePicker').hidden = true;
+  $('solarDateValue').setAttribute('aria-expanded', 'false');
+});
 const solarDateTrigger = $('solarDateValue');
 const solarDatePicker = $('solarDatePicker');
 const solarDateSlider = $('solarDateSlider');
