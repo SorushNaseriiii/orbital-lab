@@ -1,9 +1,9 @@
 {
   "name": "orbital-lab",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "type": "module",
-  "description": "ORBITAL LAB v1.0.6 — static Three.js orbital mechanics explorer with Earth-centred angular momentum, responsive scene framing and direct equirectangular Earth albedo and NASA Black Marble night-light mapping.",
+  "description": "ORBITAL LAB v1.0.7 — static Three.js orbital mechanics explorer with a repaired scene layout and interactive Persian solar-date picker.",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },

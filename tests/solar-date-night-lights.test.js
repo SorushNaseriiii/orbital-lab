@@ -78,3 +78,24 @@ test('NASA daytime and nighttime map attribution is retained with the static ass
   assert.match(attributionSource, /Joshua Stevens/);
   assert.match(attributionSource, /Both maps are static global composites/);
 });
+
+test('solar date picker markup is unique, bounded, closable, and excludes the unwanted 86400x rate', () => {
+  for (const id of [
+    'solarDatePicker',
+    'solarDatePickerClose',
+    'solarDateSlider',
+    'solarDateStart',
+    'solarDateEnd'
+  ]) {
+    const matches = htmlSource.match(new RegExp(`id="${id}"`, 'g')) || [];
+    assert.equal(matches.length, 1, `${id} must appear exactly once`);
+  }
+
+  assert.ok(htmlSource.includes('>۱ فروردین</span>'));
+  assert.ok(htmlSource.includes('>۲۹ اسفند</span>'));
+  assert.ok(!htmlSource.includes('value="86400"'));
+
+  assert.ok(appSource.includes("solarDatePickerClose?.addEventListener('click'"));
+  assert.ok(appSource.includes("solarDateSlider?.addEventListener('input'"));
+  assert.ok(appSource.includes('setSolarDatePickerOpen(false)'));
+});

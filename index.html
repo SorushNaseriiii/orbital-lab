@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="description" content="An offline-first interactive orbital mechanics laboratory with Earth and 2D orbital views.">
-  <title>ORBITAL LAB — Version 1.0.6</title>
+  <title>ORBITAL LAB — Version 1.0.7</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -57,83 +57,47 @@
         <div class="scene-solar-date" aria-live="off">
           <span class="readout-label">SOLAR EPHEMERIS DATE</span>
           <time
-  id="solarDateValue"
-  lang="fa"
-  dir="rtl"
-  datetime=""
-  role="button"
-  tabindex="0"
-  aria-expanded="false"
-  aria-controls="solarDatePicker"
->—</time>
-          <small lang="fa" dir="rtl" style="display:block; opacity:0.65; font-size:10px; margin-top:4px;">
-  موقعیت زمین نسبت به خورشید بر اساس این تاریخ
-</small>
-          
+            id="solarDateValue"
+            lang="fa"
+            dir="rtl"
+            datetime=""
+            role="button"
+            tabindex="0"
+            aria-expanded="false"
+            aria-controls="solarDatePicker"
+          >—</time>
+          <small class="solar-date-caption" lang="fa" dir="rtl">موقعیت زمین نسبت به خورشید بر اساس این تاریخ</small>
 
-<div class="solar-date-picker" id="solarDatePicker" hidden>
-  <div class="solar-date-picker-head">
-    <div class="solar-date-picker-title">
-      <span>SELECT DATE</span>
-      <strong id="solarDatePickerValue">—</strong>
-    </div>
-    <button class="solar-date-picker-close"
-      id="solarDatePickerClose"
-      type="button"
-      aria-label="Close date picker">×</button>
-  </div>
+          <div class="solar-date-picker" id="solarDatePicker" hidden>
+            <div class="solar-date-picker-head">
+              <div class="solar-date-picker-title">
+                <span>SELECT DATE</span>
+                <strong id="solarDatePickerValue">—</strong>
+              </div>
+              <button
+                class="solar-date-picker-close"
+                id="solarDatePickerClose"
+                type="button"
+                aria-label="Close date picker"
+              >×</button>
+            </div>
 
-  <input
-    id="solarDateSlider"
-    type="range"
-    min="0"
-    max="364"
-    step="1"
-    value="0"
-    dir="ltr"
-    aria-label="Solar ephemeris date"
-  >
+            <input
+              id="solarDateSlider"
+              type="range"
+              min="0"
+              max="364"
+              step="1"
+              value="0"
+              dir="ltr"
+              aria-label="Solar ephemeris date"
+            >
 
-  <div class="solar-date-picker-limits" dir="ltr">
-    <span id="solarDateStart" dir="rtl">۱ فروردین</span>
-    <span id="solarDateEnd" dir="rtl">۲۹ اسفند</span>
-  </div>
-</div>
-
-
-  <input
-    id="solarDateSlider"
-    type="range"
-    min="0"
-    max="364"
-    step="1"
-    value="0"
-    dir="ltr"
-    aria-label="Solar ephemeris date"
-  >
-
-  <div class="solar-date-picker-limits" dir="ltr">
-    <span id="solarDateStart" dir="rtl">۱ فروردین</span>
-    <span id="solarDateEnd" dir="rtl">۲۹ اسفند</span>
-  </div>
-</div>
-
-
-  <input
-    id="solarDateSlider"
-    type="range"
-    min="0"
-    max="364"
-    step="1"
-    value="0"
-    aria-label="Solar ephemeris date"
-  >
-
-  <div class="solar-date-picker-limits">
-    <span id="solarDateStart">—</span>
-    <span id="solarDateEnd">—</span>
-  </div>
-</div>
+            <div class="solar-date-picker-limits" dir="ltr">
+              <span id="solarDateStart" dir="rtl">۱ فروردین</span>
+              <span id="solarDateEnd" dir="rtl">۲۹ اسفند</span>
+            </div>
+          </div>
         </div>
         <canvas id="sceneCanvas" aria-label="3D globe and satellite orbit"></canvas>
         <div class="scene-vignette" aria-hidden="true"></div>
@@ -208,7 +172,7 @@
 
         <div class="simulation-strip earth-mode-only" id="simulationStrip">
           <div class="simulation-state"><span class="sim-led" id="simLed"></span><span id="simStateText">PAUSED</span></div>
-          <div class="speed-control"><label for="timeScale">SIM RATE</label><select id="timeScale" aria-label="Simulation time scale"><option value="1">1×</option><option value="60">60×</option><option value="600" selected>600×</option><option value="3600">3600×</option><option value="86400">86400×</option></select></div>
+          <div class="speed-control"><label for="timeScale">SIM RATE</label><select id="timeScale" aria-label="Simulation time scale"><option value="1">1×</option><option value="60">60×</option><option value="600" selected>600×</option><option value="3600">3600×</option></select></div>
           <button class="reset-button" id="resetButton" type="button" title="Reset orbital elements">↺ <span>RESET</span></button>
         </div>
 
