@@ -857,10 +857,19 @@ function initControls() {
   });
 
   solarDateSlider?.addEventListener('input', (event) => {
+    state.renderer?.beginSimulationDateScrub?.();
     const selectedDate = solarDateFromDayIndex(Number(event.target.value));
     state.renderer?.setSimulationDate?.(selectedDate);
     updateSolarDateReadout();
   });
+
+  const endSolarDateScrub = () => state.renderer?.endSimulationDateScrub?.();
+  solarDateSlider?.addEventListener('pointerdown', () => state.renderer?.beginSimulationDateScrub?.());
+  solarDateSlider?.addEventListener('pointerup', endSolarDateScrub);
+  solarDateSlider?.addEventListener('pointercancel', endSolarDateScrub);
+  solarDateSlider?.addEventListener('change', endSolarDateScrub);
+  solarDateSlider?.addEventListener('blur', endSolarDateScrub);
+  window.addEventListener('blur', endSolarDateScrub);
 
   document.addEventListener('pointerdown', (event) => {
     if (!solarDatePicker || solarDatePicker.hidden) return;
