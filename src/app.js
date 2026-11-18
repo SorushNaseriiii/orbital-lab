@@ -44,7 +44,9 @@ const state = {
   settings: null,
   viewMode: 'earth',
   plotFrameCounter: 0,
-  plotGeometry: null
+  plotGeometry: null,
+  panelCollapsed: false,
+  autoAnimateTimer: 0
 };
 
 const sliderMap = { h: 'h', e: 'e', i: 'i', raan: 'raan', argp: 'argp', theta: 'theta' };
@@ -587,6 +589,46 @@ function setViewMode(mode) {
   renderVectors(state.display);
 }
 
+
+function syncPanelCollapseButton() {
+  const button = $('panelCollapseToggle');
+  if (!button) return;
+  const isPortraitMobile = window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches;
+  const collapsed = !!state.panelCollapsed;
+  const action = collapsed ? 'Expand' : 'Collapse';
+  button.setAttribute('aria-pressed', String(collapsed));
+  button.setAttribute('aria-label', `${action} control panel`);
+  button.title = `${action} control panel`;
+  button.dataset.direction = isPortraitMobile ? (collapsed ? 'up' : 'down') : (collapsed ? 'left' : 'right');
+}
+
+function setPanelCollapsed(collapsed) {
+  state.panelCollapsed = !!collapsed;
+  document.body.classList.toggle('panel-collapsed', state.panelCollapsed);
+  syncPanelCollapseButton();
+  window.setTimeout(() => {
+    state.renderer?.resize?.();
+    if (!$('plotDock').hidden) drawPlot();
+  }, 320);
+}
+
+function triggerAnimateAutoHighlight() {
+  const toggle = $('animateToggle')?.closest('.animate-toggle');
+  if (!toggle) return;
+  toggle.classList.add('auto-highlight');
+  window.setTimeout(() => toggle.classList.remove('auto-highlight'), 3200);
+}
+
+function scheduleAutoAnimationStart() {
+  window.clearTimeout(state.autoAnimateTimer);
+  state.autoAnimateTimer = window.setTimeout(() => {
+    state.speed = 600;
+    if ($('timeScale')) $('timeScale').value = '600';
+    if (!state.running) toggleAnimation(true);
+    triggerAnimateAutoHighlight();
+  }, 5000);
+}
+
 function syncPlotOptions() {
   const select = $('plotType');
   const current = select.value;
@@ -758,6 +800,10 @@ function initControls() {
   $('timeScale').addEventListener('change', (event) => {
     state.speed = Number(event.target.value);
   });
+
+  $('panelCollapseToggle')?.addEventListener('click', () => setPanelCollapsed(!state.panelCollapsed));
+  window.addEventListener('resize', syncPanelCollapseButton);
+  syncPanelCollapseButton();
 
   const solarDateTrigger = $('solarDateValue');
   const solarDatePicker = $('solarDatePicker');
@@ -941,7 +987,9 @@ function init() {
     initControls();
     syncElementControls();
     setViewMode('earth');
+    setPanelCollapsed(false);
     updateSimulationUI();
+    scheduleAutoAnimationStart();
     renderVectors(state.display);
     state.renderer.pulseStart = performance.now();
     window.addEventListener('resize', () => { if (!$('plotDock').hidden) drawPlot(); });
