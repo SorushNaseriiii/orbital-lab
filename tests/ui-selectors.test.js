@@ -8,6 +8,22 @@ const rendererSource = await readFile(new URL('../src/scene/OrbitalRenderer.js',
 const assetSource = await readFile(new URL('../scripts/download-assets.mjs', import.meta.url), 'utf8');
 const stylesSource = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
 
+test('solar date picker markup is unique, bounded, closable, and excludes the unwanted 86400x rate', () => {
+  for (const id of ['solarDatePicker', 'solarDatePickerClose', 'solarDateSlider', 'solarTimeSlider']) {
+    assert.equal((htmlSource.match(new RegExp(`\\bid="${id}"`, 'g')) || []).length, 1);
+  }
+  const dateSlider = htmlSource.match(/<input\b(?=[^>]*\bid="solarDateSlider")[^>]*>/)?.[0] || '';
+  const timeSlider = htmlSource.match(/<input\b(?=[^>]*\bid="solarTimeSlider")[^>]*>/)?.[0] || '';
+  assert.match(dateSlider, /min="0"/);
+  assert.match(dateSlider, /max="364"/);
+  assert.match(dateSlider, /step="1"/);
+  assert.match(timeSlider, /min="0"/);
+  assert.match(timeSlider, /max="1439"/);
+  assert.match(timeSlider, /step="1"/);
+  assert.match(htmlSource, /id="solarDatePickerClose"[\s\S]*?type="button"/);
+  assert.doesNotMatch(htmlSource, /86400\s*x/i);
+});
+
 test('the existing camera selector cycles Earth, 2D and satellite-follow views', () => {
   assert.match(appSource, /\['earth', '2d', 'satellite'\]\.includes\(mode\)/);
   assert.match(appSource, /state\.viewMode === '2d' \? 'satellite' : 'earth'/);

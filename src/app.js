@@ -898,7 +898,12 @@ function initControls() {
   });
 
   const endSolarDateScrub = () => state.renderer?.endSimulationDateScrub?.();
-  [solarDateSlider, solarTimeSlider].forEach((slider) => {
+  solarDateSlider?.addEventListener('pointerdown', () => state.renderer?.beginSimulationDateScrub?.());
+  solarDateSlider?.addEventListener('pointerup', endSolarDateScrub);
+  solarDateSlider?.addEventListener('pointercancel', endSolarDateScrub);
+  solarDateSlider?.addEventListener('change', endSolarDateScrub);
+  solarDateSlider?.addEventListener('blur', endSolarDateScrub);
+  [solarTimeSlider].forEach((slider) => {
     slider?.addEventListener('pointerdown', () => state.renderer?.beginSimulationDateScrub?.());
     slider?.addEventListener('pointerup', endSolarDateScrub);
     slider?.addEventListener('pointercancel', endSolarDateScrub);

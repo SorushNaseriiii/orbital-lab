@@ -1131,9 +1131,6 @@ setSimulationDate(date) {
   this.solarEpochDate = new Date(selectedDate.getTime() - timeSec * 1000);
   this.solarMeanAnomaly = epochMeanAnomaly;
   this.solarEpochMeanAnomaly = epochMeanAnomaly;
-  this.earthRotationAngle = greenwichSiderealAngle(selectedDate);
-  this.bodyGroup.rotation.y = this.earthRotationAngle;
-
   const solarState = Solar.stateAtMeanAnomaly(selectedMeanAnomaly);
 
   this.sunDirection
@@ -1272,14 +1269,13 @@ endSimulationDateScrub() {
     // aligned to h, the trailing path (-v) naturally falls toward the left of frame.
     const satelliteScale = this.satelliteGroup?.scale.x || .45;
     const portraitOffset = this.camera.aspect < 1 ? .25 : 0;
-    const sideOffset = clamp(.60 + satelliteScale * .36 + portraitOffset * .18, .64, 1.06);
-    const radialOffset = clamp(.18 + satelliteScale * .16, .18, .32);
+    const sideOffset = clamp(.68 + satelliteScale * .42 + portraitOffset, .72, 1.2);
+    const radialOffset = clamp(.10 + satelliteScale * .15, .12, .26);
     const target = radial.clone().multiplyScalar(EARTH_SURFACE_CLEARANCE);
-    const planeDropOffset = clamp(.40 + satelliteScale * .12 + portraitOffset * .08, .40, .52);
-    const aftOffset = clamp(.10 + satelliteScale * .06, .10, .18);
+    const planeDropOffset = clamp(.34 + satelliteScale * .10 + portraitOffset * .06, .34, .44);
     const position = satellitePosition
       .clone()
-      .addScaledVector(velocity, sideOffset - aftOffset)
+      .addScaledVector(velocity, sideOffset)
       .addScaledVector(radial, radialOffset)
       .addScaledVector(normal, -planeDropOffset);
 
