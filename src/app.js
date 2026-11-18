@@ -927,6 +927,7 @@ function init() {
     });
     state.renderer.setSettings(state.settings);
     state.renderer.setState(state.display, state.timeSec, false, state.speed, state.pulseStart);
+    state.renderer.setSimulationDate(new Date());
 
     initControls();
     syncElementControls();
