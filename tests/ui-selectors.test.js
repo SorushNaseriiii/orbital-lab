@@ -7,6 +7,7 @@ const htmlSource = await readFile(new URL('../index.html', import.meta.url), 'ut
 const rendererSource = await readFile(new URL('../src/scene/OrbitalRenderer.js', import.meta.url), 'utf8');
 const assetSource = await readFile(new URL('../scripts/download-assets.mjs', import.meta.url), 'utf8');
 const stylesSource = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
+const timeSource = await readFile(new URL('../src/core/time.js', import.meta.url), 'utf8');
 
 test('solar date picker markup is unique, bounded, closable, and excludes the unwanted 86400x rate', () => {
   for (const id of ['solarDatePicker', 'solarDatePickerClose', 'solarDateSlider', 'solarTimeSlider']) {
@@ -181,23 +182,33 @@ test('scene panel and WebGL canvas are clipped to the same rounded corners', () 
   assert.match(stylesSource, /\.scene-panel \{ --scene-radius: 13px;/);
 });
 
-test('date selection changes annual solar geometry without rotating Earth', () => {
+test('date selection advances Earth rotation and solar geometry from the absolute GMT+03:30 date-time', () => {
   const setter = rendererSource.match(/setSimulationDate\(date\) \{([\s\S]*?)\n\s*\}/)?.[1] || '';
-  assert.match(setter, /this\.solarEpochDate = new Date/);
-  assert.match(setter, /solarDate\.setHours\(12, 0, 0, 0\)/);
+  assert.match(setter, /Solar\.meanAnomalyAtDate\(selectedDate\)/);
+  assert.match(setter, /this\.solarEpochDate = new Date\(selectedDate\.getTime\(\) - timeSec \* 1000\)/);
+  assert.match(setter, /this\.earthRotationAngle = earthRotationAngleFromDate\(selectedDate\)/);
+  assert.match(setter, /this\.bodyGroup\.rotation\.y = this\.earthRotationAngle/);
+  assert.match(setter, /this\.sunDirection[\s\S]*?solarState\.sunDirectionECI/);
   assert.match(setter, /this\.updateSunPlacement\(\)/);
-  assert.doesNotMatch(setter, /earthRotationAngle|bodyGroup\.rotation/);
+  assert.match(timeSource, /1\.00273781191135448/);
   assert.match(rendererSource, /const earthSpinMultiplier = this\.running && !this\.dateScrubbing \?/);
 });
 
-test('time-of-day selection rotates Earth without changing the selected solar ephemeris', () => {
+test('time-of-day selection updates the same absolute instant while preserving the selected local calendar day', () => {
   const setter = rendererSource.match(/setSimulationTimeOfDay\(minutes\) \{([\s\S]*?)\n\s*\}/)?.[1] || '';
-  assert.match(setter, /this\.earthRotationAngle = \(selectedMinutes \/ 1440\) \* Math\.PI \* 2/);
-  assert.match(setter, /this\.bodyGroup\.rotation\.y = this\.earthRotationAngle/);
-  assert.doesNotMatch(setter, /solarEpochMeanAnomaly|sunDirection|updateSunPlacement/);
+  assert.match(setter, /const selectedInstant = withSimulationTimeOfDay\(currentDate, selectedMinutes\)/);
+  assert.match(setter, /this\.setSimulationDate\(selectedInstant\)/);
   assert.match(appSource, /else if \(timeMinutes !== null\)[\s\S]*?setSimulationTimeOfDay/);
   assert.match(appSource, /solarTimeSlider\?\.addEventListener\('input',[\s\S]*?applySolarPickerSelection\(\{ timeMinutes:/);
   assert.match(appSource, /solarDateSlider\?\.addEventListener\('input',[\s\S]*?applySolarPickerSelection\(\{ dayIndex:/);
+});
+
+test('date and clock sliders use fixed GMT+03:30 wall time and changing date preserves clock minutes', () => {
+  assert.match(appSource, /SIMULATION_UTC_OFFSET_MS/);
+  assert.match(appSource, /toSimulationWallClock/);
+  assert.match(appSource, /solarDateFromPicker\([\s\S]*?solarTimeMinutesFromDate\(currentDate\)/);
+  assert.match(appSource, /timeOfDayFormatter = new Intl\.DateTimeFormat\('en-GB',[\s\S]*?timeZone: 'UTC'/);
+  assert.match(htmlSource, /TIME OF DAY · GMT\+3:30/);
 });
 
 test('Earth spin and simulation clock pause only while the date or time slider is being scrubbed', () => {
@@ -251,7 +262,7 @@ test('satellite camera sits below the orbital plane while remaining on the veloc
   assert.match(rendererSource, /return \{ position, target, up: normal \}/);
 });
 
-test('heliocentric date changes rotate the distant starfield without rotating the Earth body', () => {
+test('heliocentric date changes rotate the distant starfield while Earth follows the selected absolute date-time', () => {
   assert.match(rendererSource, /this\.starField = makeStars\(\)/);
   assert.match(rendererSource, /updateStarFieldRotation\(meanAnomaly = this\.solarEpochMeanAnomaly\)/);
   assert.match(rendererSource, /this\.starField\.quaternion\.setFromAxisAngle\(eclipticNorth, -longitudeDelta\)/);

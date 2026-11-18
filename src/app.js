@@ -1,6 +1,7 @@
 import { OrbitMath as M } from './core/math.js';
 import { OrbitPhysics as P } from './core/orbit.js';
 import { OrbitalRenderer as Renderer } from './scene/OrbitalRenderer.js';
+import { SIMULATION_UTC_OFFSET_MS, toSimulationWallClock } from './core/time.js';
 
 const $ = (id) => document.getElementById(id);
 const q = (selector) => document.querySelector(selector);
@@ -9,21 +10,24 @@ const LEGACY_STORAGE_KEY = 'orbital-lab-settings-v105';
 const OLDER_STORAGE_KEY = 'orbital-lab-settings-v104';
 const THIRD_OLDEST_STORAGE_KEY = 'orbital-lab-settings-v103';
 const OLDEST_STORAGE_KEY = 'orbital-lab-settings-v102';
-const persianDateFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-arabext', { day: 'numeric', month: 'long' });
-const timeOfDayFormatter = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const persianDateFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-arabext', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+const timeOfDayFormatter = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC' });
 const H_SLIDER_STEPS = 1000;
+// This is the local wall-clock noon of 1 Farvardin 1405 (2026-03-21), represented as UTC fields.
 const SOLAR_YEAR_START_UTC = Date.UTC(2026, 2, 21, 12, 0, 0);
+const SOLAR_YEAR_START_LOCAL_MIDNIGHT_UTC = Date.UTC(2026, 2, 21, 0, 0, 0);
 const SOLAR_YEAR_DAYS = 365;
 const DAY_MS = 86400000;
 
 function solarDateFromDayIndex(dayIndex) {
   const index = M.clamp(Number(dayIndex) || 0, 0, SOLAR_YEAR_DAYS - 1);
-  return new Date(SOLAR_YEAR_START_UTC + index * DAY_MS);
+  const localWallClockMs = SOLAR_YEAR_START_LOCAL_MIDNIGHT_UTC + index * DAY_MS;
+  return new Date(localWallClockMs - SIMULATION_UTC_OFFSET_MS);
 }
 
 function solarDayIndexFromDate(date) {
-  const value = new Date(date);
-  const dayStart = Date.UTC(value.getFullYear(), value.getMonth(), value.getDate(), 12, 0, 0);
+  const localDate = toSimulationWallClock(date);
+  const dayStart = Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate(), 12, 0, 0);
   return M.clamp(
     Math.round((dayStart - SOLAR_YEAR_START_UTC) / DAY_MS),
     0,
@@ -32,15 +36,14 @@ function solarDayIndexFromDate(date) {
 }
 
 function solarTimeMinutesFromDate(date) {
-  const value = new Date(date);
-  return M.clamp(value.getHours() * 60 + value.getMinutes(), 0, 1439);
+  const localDate = toSimulationWallClock(date);
+  return M.clamp(localDate.getUTCHours() * 60 + localDate.getUTCMinutes(), 0, 1439);
 }
 
 function solarDateFromPicker(dayIndex, timeMinutes = 0) {
   const date = solarDateFromDayIndex(dayIndex);
   const minutes = M.clamp(Number(timeMinutes) || 0, 0, 1439);
-  date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-  return date;
+  return new Date(date.getTime() + minutes * 60 * 1000);
 }
 let textureRefreshTimer = null;
 
@@ -314,7 +317,8 @@ function updateSolarDateReadout() {
   if (!dateOutput) return;
 
   const simulationDate = state.renderer?.getSimulationDate?.(state.timeSec) || new Date();
-  dateOutput.textContent = persianDateFormatter.format(simulationDate);
+  const localWallClock = toSimulationWallClock(simulationDate);
+  dateOutput.textContent = persianDateFormatter.format(localWallClock);
   dateOutput.dateTime = simulationDate.toISOString();
 
   const slider = $('solarDateSlider');
@@ -333,19 +337,19 @@ function updateSolarDateReadout() {
   if (timeSlider) timeSlider.value = String(timeMinutes);
 
   if (pickerValue) {
-    pickerValue.textContent = persianDateFormatter.format(solarDateFromDayIndex(dayIndex));
+    pickerValue.textContent = persianDateFormatter.format(toSimulationWallClock(solarDateFromDayIndex(dayIndex)));
   }
 
   if (timeValue) {
-    timeValue.textContent = timeOfDayFormatter.format(simulationDate);
+    timeValue.textContent = timeOfDayFormatter.format(localWallClock);
   }
 
   if (startValue) {
-    startValue.textContent = persianDateFormatter.format(solarDateFromDayIndex(0));
+    startValue.textContent = persianDateFormatter.format(toSimulationWallClock(solarDateFromDayIndex(0)));
   }
 
   if (endValue) {
-    endValue.textContent = persianDateFormatter.format(solarDateFromDayIndex(SOLAR_YEAR_DAYS - 1));
+    endValue.textContent = persianDateFormatter.format(toSimulationWallClock(solarDateFromDayIndex(SOLAR_YEAR_DAYS - 1)));
   }
 }
 
@@ -863,12 +867,12 @@ function initControls() {
         Number(dayIndex),
         solarTimeMinutesFromDate(currentDate)
       );
-      // Date changes move the Earth along its heliocentric orbit and update
-      // the Sun direction, without rotating the Earth texture.
+      // Date changes advance the complete GMT+03:30 date-time by whole days.
+      // The clock value is preserved while the Earth orientation follows the new instant.
       state.renderer?.setSimulationDate?.(selectedDate);
     } else if (timeMinutes !== null) {
-      // Clock changes rotate the Earth under the fixed Sun direction for the
-      // selected date; they do not change the annual solar ephemeris.
+      // Clock changes select a new instant on the same GMT+03:30 calendar day.
+      // The annual solar ephemeris stays on that day while Earth orientation follows the clock.
       state.renderer?.setSimulationTimeOfDay?.(Number(timeMinutes));
     }
     updateSolarDateReadout();

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { OrbitPhysics as P } from '../core/orbit.js';
 import { SolarModel as Solar } from '../core/solar.js';
+import { earthRotationAngleFromDate, withSimulationTimeOfDay } from '../core/time.js';
 
 const defaultVisuals = {
   orbit: { label: 'Orbit path', color: '#67d9ee', visible: true, opacity: .50 },
@@ -45,15 +46,6 @@ function keepPointOutsideSphere(point, minimumRadius = 1.075) {
   }
   return point;
 }
-
-function earthRotationAngleFromTimeOfDay(date = new Date()) {
-  const secondsOfDay = date.getHours() * 3600
-    + date.getMinutes() * 60
-    + date.getSeconds()
-    + date.getMilliseconds() / 1000;
-  return THREE.MathUtils.euclideanModulo((secondsOfDay / 86400) * Math.PI * 2, Math.PI * 2);
-}
-
 
 function makeTextSprite(text, color = '#ffe0a0') {
   const canvas = document.createElement('canvas');
@@ -259,12 +251,11 @@ export class OrbitalRenderer {
     this.lastTheta = null;
     this.userInteracting = false;
     this.lastPulseStart = 0;
-    // The time-of-day control owns Earth spin; the date control only changes the solar ephemeris.
-    this.earthRotationAngle = earthRotationAngleFromTimeOfDay();
     this.lastRenderTimestamp = null;
     this.viewMode = 'earth';
     this.cameraTransition = null;
     this.solarEpochDate = new Date();
+    this.earthRotationAngle = earthRotationAngleFromDate(this.solarEpochDate);
     this.solarMeanAnomaly = Solar.meanAnomalyAtDate(this.solarEpochDate);
     this.solarEpochMeanAnomaly = this.solarMeanAnomaly;
     this.solarSkyReferenceLongitude = Solar.stateAtMeanAnomaly(this.solarEpochMeanAnomaly).longitude;
@@ -1118,11 +1109,9 @@ setSimulationDate(date) {
   if (Number.isNaN(selectedDate.getTime())) return;
 
   const timeSec = Number(this.timeSec) || 0;
-  // Solar position is sampled at a fixed time of day so changing the clock
-  // slider cannot alter the annual Earth-Sun geometry.
-  const solarDate = new Date(selectedDate.getTime());
-  solarDate.setHours(12, 0, 0, 0);
-  const selectedMeanAnomaly = Solar.meanAnomalyAtDate(solarDate);
+  // The selected GMT+03:30 date and clock form one absolute instant. Both
+  // heliocentric Earth position and terrestrial rotation use that same instant.
+  const selectedMeanAnomaly = Solar.meanAnomalyAtDate(selectedDate);
 
   const epochMeanAnomaly = Solar.mod(
     selectedMeanAnomaly
@@ -1130,13 +1119,16 @@ setSimulationDate(date) {
     2 * Math.PI
   );
 
-  // Keep the selected calendar day and clock time for the simulation readout,
-  // while leaving Earth orientation untouched by date-only changes.
+  // Date and clock are one absolute instant. Moving the date slider by one
+  // day advances the physical Earth rotation by one full turn plus the small
+  // sidereal correction, while the UI preserves the selected clock minutes.
   this.solarEpochDate = new Date(selectedDate.getTime() - timeSec * 1000);
   this.solarMeanAnomaly = epochMeanAnomaly;
   this.solarEpochMeanAnomaly = epochMeanAnomaly;
-  const solarState = Solar.stateAtMeanAnomaly(selectedMeanAnomaly);
+  this.earthRotationAngle = earthRotationAngleFromDate(selectedDate);
+  this.bodyGroup.rotation.y = this.earthRotationAngle;
 
+  const solarState = Solar.stateAtMeanAnomaly(selectedMeanAnomaly);
   this.sunDirection
     .copy(eciToThree(solarState.sunDirectionECI))
     .normalize();
@@ -1150,16 +1142,13 @@ setSimulationDate(date) {
 
 setSimulationTimeOfDay(minutes) {
   const selectedMinutes = clamp(Math.round(Number(minutes) || 0), 0, 1439);
-  const selectedDate = this.getSimulationDate(this.timeSec);
-  selectedDate.setHours(Math.floor(selectedMinutes / 60), selectedMinutes % 60, 0, 0);
+  const currentDate = this.getSimulationDate(this.timeSec);
+  const selectedInstant = withSimulationTimeOfDay(currentDate, selectedMinutes);
 
-  const timeSec = Number(this.timeSec) || 0;
-  this.solarEpochDate = new Date(selectedDate.getTime() - timeSec * 1000);
-
-  // Only Earth orientation changes here. Solar mean anomaly and Sun direction
-  // intentionally remain unchanged until the date control is moved.
-  this.earthRotationAngle = (selectedMinutes / 1440) * Math.PI * 2;
-  this.bodyGroup.rotation.y = this.earthRotationAngle;
+  // Re-apply the same local calendar day with a new clock time. The Sun's
+  // heliocentric direction and Earth's rotation are both recomputed from the
+  // resulting instant; the annual date remains on the same selected day.
+  this.setSimulationDate(selectedInstant);
 }
 
 updateStarFieldRotation(meanAnomaly = this.solarEpochMeanAnomaly) {
