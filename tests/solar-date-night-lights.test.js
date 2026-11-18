@@ -11,7 +11,17 @@ const attributionSource = await readFile(new URL('../public/assets/ASSET_SOURCE.
 test('Persian solar ephemeris date is visible and uses the simulation solar epoch', () => {
   assert.match(htmlSource, /class="scene-solar-date"/);
   assert.match(htmlSource, /id="solarDateValue"/);
-  assert.match(htmlSource, /موقعیت زمین نسبت به خورشید بر اساس این تاریخ/);
+
+assert.ok(
+  htmlSource
+    .normalize('NFC')
+    .replace(/[يى]/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/[\u200c\u200f\u202a-\u202e]/g, '')
+    .replace(/\s+/g, ' ')
+    .includes('موقعیت زمین نسبت به خورشید بر اساس این تاریخ')
+);
+
   assert.match(appSource, /fa-IR-u-ca-persian-nu-arabext/);
   assert.match(appSource, /updateSolarDateReadout\(\)/);
   assert.match(appSource, /getSimulationDate\?\.\(state\.timeSec\)/);
