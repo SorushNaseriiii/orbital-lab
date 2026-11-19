@@ -473,7 +473,7 @@ function syncSettingsControls() {
 function buildLayerSettings() {
   const host = $('layerSettingsList');
   host.innerHTML = '';
-  const keys = ['orbit', 'orbitalPlane', 'equatorialPlane', 'eclipticPlane', 'rVector', 'vVector', 'hVector', 'eVector', 'nodeLine', 'satellite', 'trail', 'axes', 'atmosphere', 'sunDirection'];
+  const keys = ['orbit', 'orbitalPlane', 'equatorialPlane', 'eclipticPlane', 'rVector', 'vVector', 'hVector', 'eVector', 'nodeLine', 'perigeeDirection', 'satellite', 'trail', 'axes', 'atmosphere', 'sunDirection'];
   for (const key of keys) {
     const visual = state.settings.visuals[key];
     if (!visual) continue;
@@ -508,7 +508,6 @@ function buildLayerSettings() {
 function initSettings() {
   $('settingsOpen').addEventListener('click', openSettings);
   $('settingsClose').addEventListener('click', closeSettings);
-  $('settingsBackdrop').addEventListener('click', closeSettings);
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !$('settingsOverlay').hidden) closeSettings();
   });

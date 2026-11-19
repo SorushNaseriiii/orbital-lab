@@ -277,9 +277,42 @@ test('release 1.0.0 removes redundant unit and settings helper labels', () => {
 });
 
 test('settings gear is centered and simulation controls share a consistent vertical rhythm', () => {
-  assert.match(htmlSource, /<circle cx="12" cy="12" r="2\.65"\/>/);
+  assert.match(htmlSource, /<circle cx="12" cy="12" r="3"\/>/);
   assert.match(stylesSource, /\.settings-trigger svg \{[^}]*transform: none/s);
   assert.match(stylesSource, /\.simulation-strip \{[\s\S]*?min-height: 44px/);
   assert.match(stylesSource, /\.simulation-state \{[\s\S]*?min-height: 28px/);
   assert.match(stylesSource, /\.simulation-strip \.reset-button \{[\s\S]*?min-height: 28px/);
+});
+
+test('Layers & Colors exposes Node line and Perigee direction controls', () => {
+  assert.match(rendererSource, /nodeLine: \{ label: 'Node line N'/);
+  assert.match(rendererSource, /perigeeDirection: \{ label: 'Perigee direction'/);
+  assert.match(appSource, /'nodeLine', 'perigeeDirection'/);
+  assert.match(rendererSource, /this\.perigeeLine\.visible = !!perigeeConfig\.visible/);
+  assert.match(rendererSource, /this\.perigeeMarker\.visible = !!perigeeConfig\.visible/);
+  assert.match(rendererSource, /this\.perigeeLine\.material\.opacity = 0\.48 \* perigeeConfig\.opacity/);
+});
+
+test('scene tooltips ignore hidden objects and any hidden ancestor', () => {
+  assert.match(rendererSource, /if \(current\.visible === false\) return null/);
+  assert.match(rendererSource, /this\.refreshTooltipState\(\);/);
+  assert.match(rendererSource, /this\.hoveredObject = null;/);
+  assert.match(rendererSource, /const hit = sunHit \|\| intersections\.find\(\(item\) => findTooltip\(item\.object\)\)/);
+});
+
+test('settings gear uses a clean centered gear icon', () => {
+  const settingsButton = htmlSource.match(/<button class="icon-button settings-trigger"[\s\S]*?<\/button>/)?.[0] || '';
+  assert.match(settingsButton, /<svg viewBox="0 0 24 24"/);
+  assert.match(settingsButton, /<circle cx="12" cy="12" r="3"/);
+  assert.match(settingsButton, /<path d="M19\.4 15a1\.65 1\.65/);
+});
+
+
+test('settings opens only the drawer without a secondary backdrop panel', () => {
+  assert.match(htmlSource, /<div class=\"settings-overlay\" id=\"settingsOverlay\" hidden>\s*<section class=\"settings-panel\"/);
+  assert.doesNotMatch(htmlSource, /settings-backdrop|settingsBackdrop/);
+  assert.doesNotMatch(appSource, /settings-backdrop|settingsBackdrop/);
+  assert.doesNotMatch(stylesSource, /settings-backdrop/);
+  assert.match(stylesSource, /\.settings-overlay \{[^}]*pointer-events: none/);
+  assert.match(stylesSource, /\.settings-panel \{[^}]*pointer-events: auto/);
 });

@@ -14,6 +14,7 @@ const defaultVisuals = {
   hVector: { label: 'Angular momentum h', color: '#b69bff', visible: true, opacity: .9, legend: true },
   eVector: { label: 'Eccentricity vector e', color: '#a3e6a0', visible: true, opacity: .9, legend: true },
   nodeLine: { label: 'Node line N', color: '#54d7a2', visible: true, opacity: .9 },
+  perigeeDirection: { label: 'Perigee direction', color: '#f4c76d', visible: true, opacity: 1 },
   satellite: { label: 'Satellite', color: '#e9f4ff', visible: true, opacity: 1 },
   trail: { label: 'Motion trail', color: '#f39ac4', visible: true, opacity: .72 },
   axes: { label: 'ECI axes', color: '#8193ad', visible: true, opacity: .82, legend: true },
@@ -1011,6 +1012,20 @@ export class OrbitalRenderer {
       object.visible = !!config.visible;
       setObjectMaterial(object, config.color, config.opacity);
     }
+
+    // Perigee direction is one configurable layer: its line and endpoint marker
+    // share visibility and color while preserving the line's original 48% baseline opacity.
+    const perigeeConfig = this.visual('perigeeDirection');
+    this.perigeeLine.visible = !!perigeeConfig.visible;
+    this.perigeeLine.material.color.set(perigeeConfig.color);
+    this.perigeeLine.material.opacity = 0.48 * perigeeConfig.opacity;
+    this.perigeeLine.material.transparent = true;
+    this.perigeeMarker.visible = !!perigeeConfig.visible;
+    this.perigeeMarker.material.color.set(perigeeConfig.color);
+    this.perigeeMarker.material.opacity = perigeeConfig.opacity;
+    this.perigeeMarker.material.transparent = perigeeConfig.opacity < 0.999;
+    this.perigeeMarker.material.needsUpdate = true;
+
     const axisConfig = this.visual('axes');
     const axisColors = ['#d8797d', '#72c99a', '#77a8ed'];
     (this.axisLabels || []).forEach((label, index) => {
@@ -1078,6 +1093,7 @@ export class OrbitalRenderer {
     this.settings = settings;
     if (refreshTexture) this.refreshBodyTexture();
     this.applyVisuals();
+    this.refreshTooltipState();
   }
 
   setBody(key) {
@@ -1747,11 +1763,15 @@ endSimulationDateScrub() {
   bindSceneTooltips() {
     const findTooltip = (object) => {
       let current = object;
+      let tooltip = null;
       while (current) {
-        if (current.userData?.tooltip) return current.userData.tooltip;
+        // Raycaster intersections can include objects that are not rendered.
+        // Check the complete ancestor chain before accepting their tooltip.
+        if (current.visible === false) return null;
+        if (!tooltip && current.userData?.tooltip) tooltip = current.userData.tooltip;
         current = current.parent;
       }
-      return null;
+      return tooltip;
     };
     this.canvas.addEventListener('pointermove', (event) => {
       const rect = this.canvas.getBoundingClientRect();
@@ -1789,6 +1809,7 @@ endSimulationDateScrub() {
 
   refreshTooltipState() {
     if (this.sceneTooltip) this.sceneTooltip.hidden = true;
+    this.hoveredObject = null;
   }
 
   dispose() {
