@@ -412,15 +412,30 @@ function toggleAnimation(enabled) {
   updateSimulationUI();
 }
 
+function setCollapseToggleDimmed(isDimmed) {
+  const button = $('panelCollapseToggle');
+  if (!button) return;
+
+  button.classList.toggle('settings-dimmed', isDimmed);
+  button.disabled = isDimmed;
+  if (isDimmed) {
+    button.setAttribute('aria-disabled', 'true');
+  } else {
+    button.removeAttribute('aria-disabled');
+  }
+}
+
 function openSettings() {
   $('settingsOverlay').hidden = false;
   document.body.classList.add('settings-open');
+  setCollapseToggleDimmed(true);
   state.renderer?.refreshTooltipState?.();
 }
 
 function closeSettings() {
   $('settingsOverlay').hidden = true;
   document.body.classList.remove('settings-open');
+  setCollapseToggleDimmed(false);
 }
 
 function applySettings(refreshTexture = false) {

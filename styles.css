@@ -859,6 +859,7 @@ body.settings-open .axis-label,
 body.settings-open .scene-bottom-meta,
 body.settings-open .plot-dock,
 body.settings-open .control-panel,
+body.settings-open .panel-collapse-toggle,
 body.settings-open .scene-tooltip,
 body.settings-open .scene-error {
   filter: blur(4px);
@@ -875,6 +876,14 @@ body.settings-open .settings-panel {
 body.settings-open .settings-panel {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* Keep the scene collapse control in the same disabled visual state as the other UI. */
+.panel-collapse-toggle.settings-dimmed {
+  filter: blur(4px) !important;
+  opacity: .38 !important;
+  pointer-events: none !important;
+  cursor: default !important;
 }
 @media (max-width: 760px) {
   .settings-panel { width: min(94vw, 480px); height: 100dvh; }
